@@ -5,18 +5,15 @@ import {ERC20Permit} from "../lib/openzeppelin-contracts/contracts/token/ERC20/e
 import {ERC20} from "../lib/openzeppelin-contracts/contracts/token/ERC20/ERC20.sol";
 import {Ownable} from "../lib/openzeppelin-contracts/contracts/access/Ownable.sol";
 import {ECDSA} from "../lib/openzeppelin-contracts/contracts/utils/cryptography/ECDSA.sol";
-import {FunctionsClient} from "../lib/chainlink/contracts/src/v0.8/functions/v1_0_0/FunctionsClient.sol";
-import {FunctionsRequest} from "../lib/chainlink/contracts/src/v0.8/functions/v1_0_0/libraries/FunctionsRequest.sol";
 
-contract BettingPools is Ownable, FunctionsClient {
-    using FunctionsRequest for FunctionsRequest.Request;
-
+contract BettingPools is Ownable {
     // Enums
     enum PoolStatus {
         NONE,
         PENDING,
         GRADED,
         REGRADED //Disputed (unused for now)
+
     }
 
     // Structs
@@ -79,7 +76,6 @@ contract BettingPools is Ownable, FunctionsClient {
 
     // State
     ERC20Permit usdc;
-cccccblefrehichrtdtnufbgkucdjkljbljluknvhblj
 
     uint256 public nextPoolId = 1;
     uint256 public nextBetId = 1;
@@ -89,14 +85,6 @@ cccccblefrehichrtdtnufbgkucdjkljbljluknvhblj
     mapping(uint256 betId => Bet bet) public bets;
     mapping(address bettor => uint256[] betIds) public userBets;
 
-    mapping(bytes32 functionsRequestId => uint256 poolId) public functionsRequestToPoolId;
-
-    // Functions Config
-    uint64 public subscriptionId;
-    bytes32 public donId;
-    uint24 public callbackGasLimit;
-    bytes public encryptedSecretsReference;
-    string public script;
 
     // Custom Errors
     error BetsCloseTimeInPast();
@@ -128,8 +116,8 @@ cccccblefrehichrtdtnufbgkucdjkljbljluknvhblj
     event TwitterPostIdSet(uint256 indexed poolId, string twitterPostId);
     event PayoutClaimed(uint256 indexed betId, uint256 indexed poolId, address indexed user, uint256 amount);
 
-    constructor(address _functionsRouter, address _usdc) Ownable(msg.sender) FunctionsClient(_functionsRouter) {
-      usdc = ERC20Permit(_usdc);
+    constructor(address _usdc) Ownable(msg.sender) {
+        usdc = ERC20Permit(_usdc);
     }
 
     function createPool(CreatePoolParams calldata params) external onlyOwner returns (uint256 poolId) {
@@ -211,73 +199,13 @@ cccccblefrehichrtdtnufbgkucdjkljbljluknvhblj
         emit BetPlaced(betId, poolId, bettor, optionIndex, amount);
     }
 
-    // POSSIBLE FUTURE EXTENSION: Anyone can call this function to grade a bet at any time, but
-    // it costs 0.01 ETH to cover the costs of grading the bet to cover the costs of the Functions request to grade
-    // (That way the contract only cannot withhold grading the bet)
-    function gradeBet(uint256 poolId) external onlyOwner {
+    function gradeBet(uint256 poolId, uint256 responseOption) external onlyOwner {
         Pool storage pool = pools[poolId];
 
         if (pool.status != PoolStatus.PENDING) revert PoolNotOpen();
         if (block.timestamp < pool.betsCloseAt) revert BettingPeriodNotClosed();
 
-        FunctionsRequest.Request memory req;
-        req.initializeRequest(FunctionsRequest.Location.Inline, FunctionsRequest.CodeLanguage.JavaScript, script);
-        req.secretsLocation = FunctionsRequest.Location.Remote;
-        req.encryptedSecretsReference = encryptedSecretsReference;
-
-        bytes[] memory bytesArgs = new bytes[](6);
-        bytesArgs[0] = abi.encodePacked(pool.id);
-        bytesArgs[1] = abi.encodePacked(pool.betsCloseAt);
-        bytesArgs[2] = abi.encodePacked(pool.decisionDate);
-        bytesArgs[3] = abi.encodePacked(pool.betTotals[0]);
-        bytesArgs[4] = abi.encodePacked(pool.betTotals[1]);
-        bytesArgs[5] = abi.encodePacked(pool.createdAt);
-        req.setBytesArgs(bytesArgs);
-
-        string[] memory args = new string[](5);
-        args[0] = pool.question;
-        args[1] = pool.options[0];
-        args[2] = pool.options[1];
-        args[3] = pool.closureCriteria;
-        args[4] = pool.closureInstructions;
-        req.setArgs(args);
-
-        bytes32 requestId = _sendRequest(req.encodeCBOR(), subscriptionId, callbackGasLimit, donId);
-
-        functionsRequestToPoolId[requestId] = poolId;
-    }
-
-    function setFunctionsRequestConfig(uint64 _subscriptionId, bytes32 _donId, uint24 _callbackGasLimit)
-        external
-        onlyOwner
-    {
-        subscriptionId = _subscriptionId;
-        donId = _donId;
-        callbackGasLimit = _callbackGasLimit;
-    }
-
-    function setFunctionsSecrets(bytes calldata _encryptedSecretsReference) external onlyOwner {
-        encryptedSecretsReference = _encryptedSecretsReference;
-    }
-
-    // POSSIBLE FUTURE EXTENSION: Set some governance on how and when the script can changed.
-    // Maybe take a snapshot of the script for each  pool so it cannot be changed after the pool is created?
-    function setFunctionsRequestScript(string calldata _script) external onlyOwner {
-        script = _script;
-    }
-
-    // Functions will return 0, 1, 2, or 3 for the 4 possible outcomes
-    // (0 = option 1 wins, 1 = option 2 wins, 2 = push, 3 = unable to grade yet)
-    function fulfillRequest(bytes32 requestId, bytes memory response, bytes memory err) internal override {
-        if (err.length != 0) revert GradingError();
-
-        uint256 poolId = functionsRequestToPoolId[requestId];
-        Pool storage pool = pools[poolId];
-
-        if (pool.status != PoolStatus.PENDING) revert PoolNotOpen();
         pool.status = PoolStatus.GRADED;
-
-        uint256 responseOption = abi.decode(response, (uint256));
 
         if (responseOption == 0) {
             pool.winningOption = 0;
@@ -293,33 +221,31 @@ cccccblefrehichrtdtnufbgkucdjkljbljluknvhblj
     }
 
     function claimPayouts(uint256[] calldata betIds) external {
+        for (uint256 i = 0; i < betIds.length; i++) {
+            uint256 betId = betIds[i];
+            if (pools[bets[betId].poolId].status != PoolStatus.GRADED) continue;
+            if (bets[betId].isPayedOut) continue;
 
-      for (uint256 i = 0; i < betIds.length; i++) {
-        uint256 betId = betIds[i];
-        if (pools[bets[betId].poolId].status != PoolStatus.GRADED) continue;
-        if (bets[betId].isPayedOut) continue;
-        
-        bets[betId].isPayedOut = true;
-        uint256 poolId = bets[betId].poolId;
+            bets[betId].isPayedOut = true;
+            uint256 poolId = bets[betId].poolId;
 
-        // If it is a draw or there are no bets on one side or the other, refund the bet
-        if (pools[poolId].isDraw || pools[poolId].betTotals[0] == 0 || pools[poolId].betTotals[1] == 0) {
-          usdc.transfer(bets[betId].owner, bets[betId].amount);
-          continue;
+            // If it is a draw or there are no bets on one side or the other, refund the bet
+            if (pools[poolId].isDraw || pools[poolId].betTotals[0] == 0 || pools[poolId].betTotals[1] == 0) {
+                usdc.transfer(bets[betId].owner, bets[betId].amount);
+                continue;
+            }
+
+            uint256 losingOption = pools[poolId].winningOption == 0 ? 1 : 0;
+
+            if (bets[betId].option == pools[poolId].winningOption) {
+                uint256 winAmount = (bets[betId].amount * pools[poolId].betTotals[losingOption])
+                    / pools[poolId].betTotals[pools[poolId].winningOption] + bets[betId].amount;
+                uint256 fee = (winAmount * PAYOUT_FEE_BP) / 10000;
+                uint256 payout = winAmount - fee;
+                usdc.transfer(bets[betId].owner, payout);
+                usdc.transfer(owner(), fee);
+                emit PayoutClaimed(betId, poolId, bets[betId].owner, payout);
+            }
         }
-
-        uint256 losingOption = pools[poolId].winningOption == 0 ? 1 : 0;
-
-        if (bets[betId].option == pools[poolId].winningOption) {
-          uint256 winAmount =
-            (bets[betId].amount * pools[poolId].betTotals[losingOption]) /
-              pools[poolId].betTotals[pools[poolId].winningOption] + bets[betId].amount;
-          uint256 fee = (winAmount * PAYOUT_FEE_BP) / 10000;
-          uint256 payout = winAmount - fee;
-          usdc.transfer(bets[betId].owner, payout);
-          usdc.transfer(owner(), fee);
-          emit PayoutClaimed(betId, poolId, bets[betId].owner, payout);
-        }
-      }
     }
 }
