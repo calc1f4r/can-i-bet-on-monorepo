@@ -109,7 +109,7 @@ export const SimulateBets = ({ poolId }: SimulateBetsProps) => {
   }
 
   const totalPool = data?.pool?.totalBets;
-  const bettingOpen = data?.pool?.status === PoolStatus.Open;
+  const bettingOpen = data?.pool?.status === PoolStatus.Pending;
   const postiveOption = data?.pool?.options[0] || "Oh, yes";
   const negativeOption = data?.pool?.options[1] || "Oh, No";
   const totalPositiveBets = data?.pool?.totalBetsByOption[0];

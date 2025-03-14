@@ -1,7 +1,8 @@
+import { GET_POOL } from "@/app/queries";
 import { Pool, PoolStatus } from "@/lib/__generated__/graphql";
 import { MockedProvider } from "@apollo/client/testing";
 import type { Meta, StoryObj } from "@storybook/react";
-import { GET_POOL, SimulateBets } from "./SimulateBets";
+import { SimulateBets } from "./SimulateBets";
 
 const mocks = [
   {
@@ -19,8 +20,8 @@ const mocks = [
           totalBets: "3000000",
           totalBetsByOption: ["1000000", "2000000"],
           selectedOption: "Paris",
-          status: PoolStatus.Open,
-        } as Pool,
+          status: PoolStatus.Pending,
+        } as unknown as Pool,
       },
     },
   },

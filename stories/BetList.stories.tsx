@@ -15,7 +15,7 @@ const mockBets: GetBetsQuery["bets"] = [
     optionIndex: "0",
     transactionHash:
       "0x123456789abcdef123456789abcdef123456789abcdef123456789abcdef1234",
-    user: "0xabc123def456abc123def456abc123def456abc1",
+    userAddress: "0xabc123def456abc123def456abc123def456abc1",
     poolIntId: "1",
     blockNumber: "1000000",
     pool: {
@@ -46,7 +46,7 @@ const mockBets: GetBetsQuery["bets"] = [
     optionIndex: "1",
     transactionHash:
       "0xabcdef123456789abcdef123456789abcdef123456789abcdef123456789abcd",
-    user: "0xdef456abc789def456abc789def456abc789def4",
+    userAddress: "0xdef456abc789def456abc789def456abc789def4",
     poolIntId: "2",
     blockNumber: "1000001",
     pool: {
@@ -77,7 +77,7 @@ const mockBets: GetBetsQuery["bets"] = [
     optionIndex: "0",
     transactionHash:
       "0x789abcdef123456789abcdef123456789abcdef123456789abcdef123456789a",
-    user: "0x789abc123def456789abc123def456789abc1234",
+    userAddress: "0x789abc123def456789abc123def456789abc1234",
     poolIntId: "3",
     blockNumber: "1000002",
     pool: {
@@ -109,7 +109,7 @@ const mockBets: GetBetsQuery["bets"] = [
     optionIndex: "0",
     transactionHash:
       "0x567890abcdef123456789abcdef123456789abcdef123456789abcdef123456",
-    user: "0x567890abcdef123456789abcdef123456789abcd",
+    userAddress: "0x567890abcdef123456789abcdef123456789abcd",
     poolIntId: "2",
     blockNumber: "1000003",
     pool: {
@@ -140,7 +140,7 @@ const mockBets: GetBetsQuery["bets"] = [
     optionIndex: "1",
     transactionHash:
       "0x890abcdef123456789abcdef123456789abcdef123456789abcdef12345678",
-    user: "0xabc123def456abc123def456abc123def456abc1",
+    userAddress: "0xabc123def456abc123def456abc123def456abc1",
     poolIntId: "1",
     blockNumber: "1000004",
     pool: {

@@ -20,13 +20,24 @@ const createMockBet = (optionIndex: number, options: string[]): Bet => ({
   betIntId: "1",
   optionIndex: optionIndex.toString(),
   amount: "10000000", // $10 with 6 decimals (USDC)
-  user: "0x1234567890123456789012345678901234567890",
+  user: {
+    __typename: "User",
+    id: "0x1234567890123456789012345678901234567890",
+    address: "0x1234567890123456789012345678901234567890",
+    bets: [],
+    lastLogin: undefined,
+    loginStreak: undefined,
+    lossStreak: undefined,
+    totalLossAmount: undefined,
+    totalLossCount: undefined,
+    totalWinAmount: undefined,
+    totalWinCount: undefined,
+    winStreak: undefined,
+  },
+  userAddress: "0x1234567890123456789012345678901234567890",
   poolIntId: "1",
   blockNumber: "123456",
-  blockTimestamp: (
-    (Date.now() - 5 * 60 * 1000) /
-    1000
-  ).toString(), // 5 minutes ago
+  blockTimestamp: ((Date.now() - 5 * 60 * 1000) / 1000).toString(), // 5 minutes ago
   transactionHash: "0xabcdef",
   chainId: "1",
   chainName: "Ethereum",
@@ -67,7 +78,7 @@ const createMockBet = (optionIndex: number, options: string[]): Bet => ({
     lastUpdatedBlockTimestamp: "1625097600",
     lastUpdatedTransactionHash: "0xabc123",
   },
-  payoutClaimed: false
+  payoutClaimed: false,
 });
 
 // Create a story with a larger bet amount

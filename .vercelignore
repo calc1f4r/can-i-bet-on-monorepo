@@ -1,3 +1,4 @@
 contracts/lib
 graph/
-graph-sonic/
+graph-scroll/
+graph-base/

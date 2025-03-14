@@ -18,8 +18,22 @@ const createMockBet = (index: number): Bet => {
     betIntId: index.toString(),
     optionIndex,
     amount: amount.toString(),
+    user: {
+      __typename: "User",
+      id: faker.finance.ethereumAddress(),
+      address: faker.finance.ethereumAddress(),
+      bets: [],
+      lastLogin: undefined,
+      loginStreak: undefined,
+      lossStreak: undefined,
+      totalLossAmount: undefined,
+      totalLossCount: undefined,
+      totalWinAmount: undefined,
+      totalWinCount: undefined,
+      winStreak: undefined
+    },
     payoutClaimed: false, // Added missing required field
-    user: faker.finance.ethereumAddress(),
+    userAddress: faker.finance.ethereumAddress(),
     poolIntId: Math.floor(Math.random() * 10).toString(),
     blockNumber: (10000000 + index).toString(),
     blockTimestamp: timestamp,
