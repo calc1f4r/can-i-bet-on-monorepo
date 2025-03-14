@@ -1,0 +1,67 @@
+---
+description: This rule is useful for when we need to fetch data from an external api that is NOT a graphql endpoint. Can also be used as a wapper for fetching data on chain
+globs: *.ts, *.tsx
+alwaysApply: false
+---
+# React Query (TanStack Query) Usage
+
+## Data Fetching and Management
+- Use react-query for all server state management; avoid local state for API data
+- Implement custom hooks for reusable query logic
+- Define type-safe query keys using constants or factory functions
+- Use discriminated unions for error types
+- Implement retry logic only for transient failures
+
+## Query Configuration
+- Set appropriate staleTime based on data volatility
+- Use infiniteQuery for pagination/infinite scroll
+- Configure query defaults at QueryClientProvider level
+- Enable suspense mode only when needed
+- Implement proper error boundaries for suspended queries
+
+## Cache Management
+- Use queryClient.setQueryDefaults for consistent settings
+- Implement optimistic updates with onMutate/onError/onSettled
+- Use prefetchQuery for anticipated data needs
+- Configure proper cache time to minimize unnecessary refetches
+- Implement proper invalidation strategies using queryClient.invalidateQueries
+
+## Performance
+- Use select option to transform/filter data at cache level
+- Implement proper query key factories to avoid over-fetching
+- Use keepPreviousData for smoother UX during refetches
+- Implement proper loading states with isLoading/isFetching
+- Use placeholderData for immediate UI feedback
+
+## TypeScript Integration
+- Define proper types for QueryFunctionContext
+- Use generic types for query keys
+- Implement proper error typing with Error type unions
+- Type mutations with proper variables and response types
+- Use strict typing for query keys array structure
+
+### Example Query Key Structure:
+```typescript 
+const queryKeys = {
+  users: {
+    all: ['users'] as const,
+    details: (id: string) => ['users', id] as const,
+    posts: (id: string) => ['users', id, 'posts'] as const
+  }
+}
+```
+
+### Example Custom Hook:
+```typescript
+const useUser = (id: string): ReturnTypeHere {
+  return useQuery({
+    queryKey: queryKeys.users.details(id),
+    queryFn: () => fetchUser(id),
+    staleTime: 5 * 60 * 1000,
+    select: useCallback((data: UserResponse) => ({
+      ...data,
+      fullName: `${data.firstName} ${data.lastName}`
+    }), [])
+  })
+}
+```

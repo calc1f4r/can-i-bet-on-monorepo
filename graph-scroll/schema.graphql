@@ -4,7 +4,7 @@ enum PoolStatus {
 }
 
 type Bet @entity {
-  id: Bytes!
+  id: String!
   betIntId: BigInt! # uint256
   poolIntId: BigInt! # uint256
   poolIdHex: Bytes!
@@ -29,7 +29,7 @@ type Bet @entity {
 }
 
 type BetCancelled @entity(immutable: true) {
-  id: Bytes!
+  id: String!
   betId: BigInt! # uint256
   poolId: BigInt! # uint256
   user: Bytes! # address
@@ -46,7 +46,7 @@ type BetCancelled @entity(immutable: true) {
 }
 
 type BetPlaced @entity(immutable: true) {
-  id: Bytes!
+  id: String!
   betId: BigInt! # uint256
   poolId: BigInt! # uint256
   user: Bytes! # address
@@ -62,7 +62,7 @@ type BetPlaced @entity(immutable: true) {
 }
 
 type Pool @entity {
-  id: Bytes!
+  id: String!
   poolIntId: BigInt! # uint256
   question: String! # string
   options: [String!]! # string[2]
@@ -96,7 +96,7 @@ type Pool @entity {
 }
 
 type PoolClosed @entity(immutable: true) {
-  id: Bytes!
+  id: String!
   poolId: BigInt! # uint256
   selectedOption: BigInt! # uint256
   blockNumber: BigInt!
@@ -108,7 +108,7 @@ type PoolClosed @entity(immutable: true) {
 }
 
 type PoolCreated @entity(immutable: true) {
-  id: Bytes!
+  id: String!
   poolId: BigInt! # uint256
   creatorId: String! # string
   question: String! # string
@@ -128,7 +128,7 @@ type PoolCreated @entity(immutable: true) {
 }
 
 type TwitterPostIdSet @entity(immutable: true) {
-  id: Bytes!
+  id: String!
   poolIdHex: Bytes! # uint256
   poolIntId: BigInt! # uint256
   xPostId: String! # string
@@ -136,7 +136,7 @@ type TwitterPostIdSet @entity(immutable: true) {
 }
 
 type PayoutClaimed @entity(immutable: true) {
-  id: Bytes!
+  id: String!
   betId: BigInt! # uint256
   poolId: BigInt! # uint256
   user: Bytes! # address

@@ -23,7 +23,6 @@ const TweetCard = ({
   showCurrentSpread = false,
 }: TweetCardProps) => {
   // Randomly select a tweet ID for now
-  console.log("poolId", poolId);
 
   const {
     data,
@@ -32,7 +31,6 @@ const TweetCard = ({
   } = useQuery(GET_POOL, {
     variables: { poolId },
   });
-  console.log("data", data);
 
   //TODO Show a skeleton here, not loading
   if (loading) {

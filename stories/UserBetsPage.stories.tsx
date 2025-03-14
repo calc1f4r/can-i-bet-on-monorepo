@@ -35,8 +35,8 @@ const mockBets = [
       creatorId: "123",
       creatorName: "crypto_predictor",
       imageUrl: "https://picsum.photos/200",
-      chainId: "84532",
-      chainName: "Base Sepolia",
+      chainId: "534351",
+      chainName: "Scroll Sepolia",
       isDraw: false,
       xPostId: "123456",
       __typename: "Pool",
@@ -67,8 +67,8 @@ const mockBets = [
       creatorId: "456",
       creatorName: "eth_enthusiast",
       imageUrl: "https://picsum.photos/201",
-      chainId: "84532",
-      chainName: "Base Sepolia",
+      chainId: "534351",
+      chainName: "Scroll Sepolia",
       isDraw: false,
       xPostId: "789012",
       __typename: "Pool",
@@ -121,7 +121,7 @@ export const Default: Story = {
   args: {
     address: "0x1234567890abcdef1234567890abcdef12345678",
     isSelf: false,
-    chainConfig: CHAIN_CONFIG["84532"], // Base Sepolia
+    chainConfig: CHAIN_CONFIG["534351"], // Scroll Sepolia
   },
 };
 
@@ -129,7 +129,7 @@ export const Self: Story = {
   args: {
     address: "0x1234567890abcdef1234567890abcdef12345678",
     isSelf: true,
-    chainConfig: CHAIN_CONFIG["84532"], // Base Sepolia
+    chainConfig: CHAIN_CONFIG["534351"], // Scroll Sepolia
   },
 };
 
@@ -137,7 +137,7 @@ export const NoActivity: Story = {
   args: {
     address: "0x0000000000000000000000000000000000000000",
     isSelf: false,
-    chainConfig: CHAIN_CONFIG["84532"], // Base Sepolia
+    chainConfig: CHAIN_CONFIG["534351"], // Scroll Sepolia
   },
   parameters: {
     apolloClient: {

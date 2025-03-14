@@ -1,8 +1,8 @@
+import USDPAbi from "@/contracts/out/USDP.sol/USDP.json";
 import { CHAIN_CONFIG } from "@/lib/config";
 import { ethers, parseUnits } from "ethers";
 import { NextResponse } from "next/server";
-import { base, baseSepolia } from "viem/chains";
-import MockUSDCAbi from "@/contracts/out/MockUSDC.sol/MockUSDC.json";
+import { scroll, scrollSepolia } from "viem/chains";
 
 type PlaceBetRequest = {
   chainId: string | number;
@@ -23,11 +23,11 @@ import BettingPoolsAbi from "@/contracts/out/BettingPools.sol/BettingPools.json"
 const PRIVATE_CHAIN_CONFIG: {
   [key: keyof typeof CHAIN_CONFIG]: { rpcUrl: string };
 } = {
-  [baseSepolia.id]: {
-    rpcUrl: process.env.BASE_SEPOLIA_RPC_URL || "", // Move to env variable
+  [scrollSepolia.id]: {
+    rpcUrl: process.env.SCROLL_SEPOLIA_RPC_URL || "", // Move to env variable
   },
-  [base.id]: {
-    rpcUrl: process.env.BASE_RPC_URL || "", // Move to env variable
+  [scroll.id]: {
+    rpcUrl: process.env.SCROLL_RPC_URL || "", // Move to env variable
   },
 };
 
@@ -61,7 +61,7 @@ export async function POST(request: Request) {
 
     const usdcContract = new ethers.Contract(
       chainConfig.usdcAddress,
-      MockUSDCAbi.abi,
+      USDPAbi.abi,
       wallet
     );
 

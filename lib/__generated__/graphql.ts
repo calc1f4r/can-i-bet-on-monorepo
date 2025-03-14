@@ -54,7 +54,8 @@ export type Bet = {
   poolIntId: Scalars['BigInt']['output'];
   transactionHash: Scalars['Bytes']['output'];
   updatedAt: Scalars['BigInt']['output'];
-  user: Scalars['Bytes']['output'];
+  user: User;
+  userAddress: Scalars['Bytes']['output'];
 };
 
 export type BetCancelled = {
@@ -631,16 +632,37 @@ export type Bet_Filter = {
   updatedAt_lte?: InputMaybe<Scalars['BigInt']['input']>;
   updatedAt_not?: InputMaybe<Scalars['BigInt']['input']>;
   updatedAt_not_in?: InputMaybe<Array<Scalars['BigInt']['input']>>;
-  user?: InputMaybe<Scalars['Bytes']['input']>;
-  user_contains?: InputMaybe<Scalars['Bytes']['input']>;
-  user_gt?: InputMaybe<Scalars['Bytes']['input']>;
-  user_gte?: InputMaybe<Scalars['Bytes']['input']>;
-  user_in?: InputMaybe<Array<Scalars['Bytes']['input']>>;
-  user_lt?: InputMaybe<Scalars['Bytes']['input']>;
-  user_lte?: InputMaybe<Scalars['Bytes']['input']>;
-  user_not?: InputMaybe<Scalars['Bytes']['input']>;
-  user_not_contains?: InputMaybe<Scalars['Bytes']['input']>;
-  user_not_in?: InputMaybe<Array<Scalars['Bytes']['input']>>;
+  user?: InputMaybe<Scalars['String']['input']>;
+  userAddress?: InputMaybe<Scalars['Bytes']['input']>;
+  userAddress_contains?: InputMaybe<Scalars['Bytes']['input']>;
+  userAddress_gt?: InputMaybe<Scalars['Bytes']['input']>;
+  userAddress_gte?: InputMaybe<Scalars['Bytes']['input']>;
+  userAddress_in?: InputMaybe<Array<Scalars['Bytes']['input']>>;
+  userAddress_lt?: InputMaybe<Scalars['Bytes']['input']>;
+  userAddress_lte?: InputMaybe<Scalars['Bytes']['input']>;
+  userAddress_not?: InputMaybe<Scalars['Bytes']['input']>;
+  userAddress_not_contains?: InputMaybe<Scalars['Bytes']['input']>;
+  userAddress_not_in?: InputMaybe<Array<Scalars['Bytes']['input']>>;
+  user_?: InputMaybe<User_Filter>;
+  user_contains?: InputMaybe<Scalars['String']['input']>;
+  user_contains_nocase?: InputMaybe<Scalars['String']['input']>;
+  user_ends_with?: InputMaybe<Scalars['String']['input']>;
+  user_ends_with_nocase?: InputMaybe<Scalars['String']['input']>;
+  user_gt?: InputMaybe<Scalars['String']['input']>;
+  user_gte?: InputMaybe<Scalars['String']['input']>;
+  user_in?: InputMaybe<Array<Scalars['String']['input']>>;
+  user_lt?: InputMaybe<Scalars['String']['input']>;
+  user_lte?: InputMaybe<Scalars['String']['input']>;
+  user_not?: InputMaybe<Scalars['String']['input']>;
+  user_not_contains?: InputMaybe<Scalars['String']['input']>;
+  user_not_contains_nocase?: InputMaybe<Scalars['String']['input']>;
+  user_not_ends_with?: InputMaybe<Scalars['String']['input']>;
+  user_not_ends_with_nocase?: InputMaybe<Scalars['String']['input']>;
+  user_not_in?: InputMaybe<Array<Scalars['String']['input']>>;
+  user_not_starts_with?: InputMaybe<Scalars['String']['input']>;
+  user_not_starts_with_nocase?: InputMaybe<Scalars['String']['input']>;
+  user_starts_with?: InputMaybe<Scalars['String']['input']>;
+  user_starts_with_nocase?: InputMaybe<Scalars['String']['input']>;
 };
 
 export enum Bet_OrderBy {
@@ -689,7 +711,18 @@ export enum Bet_OrderBy {
   PoolXPostId = 'pool__xPostId',
   TransactionHash = 'transactionHash',
   UpdatedAt = 'updatedAt',
-  User = 'user'
+  User = 'user',
+  UserAddress = 'userAddress',
+  UserAddress = 'user__address',
+  UserId = 'user__id',
+  UserLastLogin = 'user__lastLogin',
+  UserLoginStreak = 'user__loginStreak',
+  UserLossStreak = 'user__lossStreak',
+  UserTotalLossAmount = 'user__totalLossAmount',
+  UserTotalLossCount = 'user__totalLossCount',
+  UserTotalWinAmount = 'user__totalWinAmount',
+  UserTotalWinCount = 'user__totalWinCount',
+  UserWinStreak = 'user__winStreak'
 }
 
 export type BlockChangedFilter = {
@@ -882,7 +915,7 @@ export enum PayoutClaimed_OrderBy {
   BetChainId = 'bet__chainId',
   BetChainName = 'bet__chainName',
   BetCreatedAt = 'bet__createdAt',
-  BetIId = 'bet__id',
+  BetId = 'bet__id',
   BetOptionIndex = 'bet__optionIndex',
   BetPayoutClaimed = 'bet__payoutClaimed',
   BetPayoutClaimedBlockNumber = 'bet__payoutClaimedBlockNumber',
@@ -892,7 +925,7 @@ export enum PayoutClaimed_OrderBy {
   BetPoolIntId = 'bet__poolIntId',
   BetTransactionHash = 'bet__transactionHash',
   BetUpdatedAt = 'bet__updatedAt',
-  BetUser = 'bet__user',
+  BetUserAddress = 'bet__userAddress',
   BlockNumber = 'blockNumber',
   BlockTimestamp = 'blockTimestamp',
   ChainId = 'chainId',
@@ -915,7 +948,7 @@ export enum PayoutClaimed_OrderBy {
   PoolGradedBlockNumber = 'pool__gradedBlockNumber',
   PoolGradedBlockTimestamp = 'pool__gradedBlockTimestamp',
   PoolGradedTransactionHash = 'pool__gradedTransactionHash',
-  PoolIId = 'pool__id',
+  PoolId = 'pool__id',
   PoolImageUrl = 'pool__imageUrl',
   PoolIsDraw = 'pool__isDraw',
   PoolLastUpdatedBlockNumber = 'pool__lastUpdatedBlockNumber',
@@ -1768,6 +1801,8 @@ export type Query = {
   pools: Array<Pool>;
   twitterPostIdSet?: Maybe<TwitterPostIdSet>;
   twitterPostIdSets: Array<TwitterPostIdSet>;
+  user?: Maybe<User>;
+  users: Array<User>;
 };
 
 
@@ -1919,6 +1954,24 @@ export type QueryTwitterPostIdSetsArgs = {
   where?: InputMaybe<TwitterPostIdSet_Filter>;
 };
 
+
+export type QueryUserArgs = {
+  block?: InputMaybe<Block_Height>;
+  id: Scalars['ID']['input'];
+  subgraphError?: _SubgraphErrorPolicy_;
+};
+
+
+export type QueryUsersArgs = {
+  block?: InputMaybe<Block_Height>;
+  first?: InputMaybe<Scalars['Int']['input']>;
+  orderBy?: InputMaybe<User_OrderBy>;
+  orderDirection?: InputMaybe<OrderDirection>;
+  skip?: InputMaybe<Scalars['Int']['input']>;
+  subgraphError?: _SubgraphErrorPolicy_;
+  where?: InputMaybe<User_Filter>;
+};
+
 export type Subscription = {
   __typename?: 'Subscription';
   /** Access to subgraph metadata */
@@ -1939,6 +1992,8 @@ export type Subscription = {
   pools: Array<Pool>;
   twitterPostIdSet?: Maybe<TwitterPostIdSet>;
   twitterPostIdSets: Array<TwitterPostIdSet>;
+  user?: Maybe<User>;
+  users: Array<User>;
 };
 
 
@@ -2090,6 +2145,24 @@ export type SubscriptionTwitterPostIdSetsArgs = {
   where?: InputMaybe<TwitterPostIdSet_Filter>;
 };
 
+
+export type SubscriptionUserArgs = {
+  block?: InputMaybe<Block_Height>;
+  id: Scalars['ID']['input'];
+  subgraphError?: _SubgraphErrorPolicy_;
+};
+
+
+export type SubscriptionUsersArgs = {
+  block?: InputMaybe<Block_Height>;
+  first?: InputMaybe<Scalars['Int']['input']>;
+  orderBy?: InputMaybe<User_OrderBy>;
+  orderDirection?: InputMaybe<OrderDirection>;
+  skip?: InputMaybe<Scalars['Int']['input']>;
+  subgraphError?: _SubgraphErrorPolicy_;
+  where?: InputMaybe<User_Filter>;
+};
+
 export type TwitterPostIdSet = {
   __typename?: 'TwitterPostIdSet';
   id: Scalars['Bytes']['output'];
@@ -2210,6 +2283,136 @@ export enum TwitterPostIdSet_OrderBy {
   XPostId = 'xPostId'
 }
 
+export type User = {
+  __typename?: 'User';
+  address: Scalars['Bytes']['output'];
+  bets: Array<Bet>;
+  id: Scalars['Bytes']['output'];
+  lastLogin: Scalars['BigInt']['output'];
+  loginStreak: Scalars['BigInt']['output'];
+  lossStreak: Scalars['BigInt']['output'];
+  totalLossAmount: Scalars['BigInt']['output'];
+  totalLossCount: Scalars['BigInt']['output'];
+  totalWinAmount: Scalars['BigInt']['output'];
+  totalWinCount: Scalars['BigInt']['output'];
+  winStreak: Scalars['BigInt']['output'];
+};
+
+
+export type UserBetsArgs = {
+  first?: InputMaybe<Scalars['Int']['input']>;
+  orderBy?: InputMaybe<Bet_OrderBy>;
+  orderDirection?: InputMaybe<OrderDirection>;
+  skip?: InputMaybe<Scalars['Int']['input']>;
+  where?: InputMaybe<Bet_Filter>;
+};
+
+export type User_Filter = {
+  /** Filter for the block changed event. */
+  _change_block?: InputMaybe<BlockChangedFilter>;
+  address?: InputMaybe<Scalars['Bytes']['input']>;
+  address_contains?: InputMaybe<Scalars['Bytes']['input']>;
+  address_gt?: InputMaybe<Scalars['Bytes']['input']>;
+  address_gte?: InputMaybe<Scalars['Bytes']['input']>;
+  address_in?: InputMaybe<Array<Scalars['Bytes']['input']>>;
+  address_lt?: InputMaybe<Scalars['Bytes']['input']>;
+  address_lte?: InputMaybe<Scalars['Bytes']['input']>;
+  address_not?: InputMaybe<Scalars['Bytes']['input']>;
+  address_not_contains?: InputMaybe<Scalars['Bytes']['input']>;
+  address_not_in?: InputMaybe<Array<Scalars['Bytes']['input']>>;
+  and?: InputMaybe<Array<InputMaybe<User_Filter>>>;
+  bets_?: InputMaybe<Bet_Filter>;
+  id?: InputMaybe<Scalars['Bytes']['input']>;
+  id_contains?: InputMaybe<Scalars['Bytes']['input']>;
+  id_gt?: InputMaybe<Scalars['Bytes']['input']>;
+  id_gte?: InputMaybe<Scalars['Bytes']['input']>;
+  id_in?: InputMaybe<Array<Scalars['Bytes']['input']>>;
+  id_lt?: InputMaybe<Scalars['Bytes']['input']>;
+  id_lte?: InputMaybe<Scalars['Bytes']['input']>;
+  id_not?: InputMaybe<Scalars['Bytes']['input']>;
+  id_not_contains?: InputMaybe<Scalars['Bytes']['input']>;
+  id_not_in?: InputMaybe<Array<Scalars['Bytes']['input']>>;
+  lastLogin?: InputMaybe<Scalars['BigInt']['input']>;
+  lastLogin_gt?: InputMaybe<Scalars['BigInt']['input']>;
+  lastLogin_gte?: InputMaybe<Scalars['BigInt']['input']>;
+  lastLogin_in?: InputMaybe<Array<Scalars['BigInt']['input']>>;
+  lastLogin_lt?: InputMaybe<Scalars['BigInt']['input']>;
+  lastLogin_lte?: InputMaybe<Scalars['BigInt']['input']>;
+  lastLogin_not?: InputMaybe<Scalars['BigInt']['input']>;
+  lastLogin_not_in?: InputMaybe<Array<Scalars['BigInt']['input']>>;
+  loginStreak?: InputMaybe<Scalars['BigInt']['input']>;
+  loginStreak_gt?: InputMaybe<Scalars['BigInt']['input']>;
+  loginStreak_gte?: InputMaybe<Scalars['BigInt']['input']>;
+  loginStreak_in?: InputMaybe<Array<Scalars['BigInt']['input']>>;
+  loginStreak_lt?: InputMaybe<Scalars['BigInt']['input']>;
+  loginStreak_lte?: InputMaybe<Scalars['BigInt']['input']>;
+  loginStreak_not?: InputMaybe<Scalars['BigInt']['input']>;
+  loginStreak_not_in?: InputMaybe<Array<Scalars['BigInt']['input']>>;
+  lossStreak?: InputMaybe<Scalars['BigInt']['input']>;
+  lossStreak_gt?: InputMaybe<Scalars['BigInt']['input']>;
+  lossStreak_gte?: InputMaybe<Scalars['BigInt']['input']>;
+  lossStreak_in?: InputMaybe<Array<Scalars['BigInt']['input']>>;
+  lossStreak_lt?: InputMaybe<Scalars['BigInt']['input']>;
+  lossStreak_lte?: InputMaybe<Scalars['BigInt']['input']>;
+  lossStreak_not?: InputMaybe<Scalars['BigInt']['input']>;
+  lossStreak_not_in?: InputMaybe<Array<Scalars['BigInt']['input']>>;
+  or?: InputMaybe<Array<InputMaybe<User_Filter>>>;
+  totalLossAmount?: InputMaybe<Scalars['BigInt']['input']>;
+  totalLossAmount_gt?: InputMaybe<Scalars['BigInt']['input']>;
+  totalLossAmount_gte?: InputMaybe<Scalars['BigInt']['input']>;
+  totalLossAmount_in?: InputMaybe<Array<Scalars['BigInt']['input']>>;
+  totalLossAmount_lt?: InputMaybe<Scalars['BigInt']['input']>;
+  totalLossAmount_lte?: InputMaybe<Scalars['BigInt']['input']>;
+  totalLossAmount_not?: InputMaybe<Scalars['BigInt']['input']>;
+  totalLossAmount_not_in?: InputMaybe<Array<Scalars['BigInt']['input']>>;
+  totalLossCount?: InputMaybe<Scalars['BigInt']['input']>;
+  totalLossCount_gt?: InputMaybe<Scalars['BigInt']['input']>;
+  totalLossCount_gte?: InputMaybe<Scalars['BigInt']['input']>;
+  totalLossCount_in?: InputMaybe<Array<Scalars['BigInt']['input']>>;
+  totalLossCount_lt?: InputMaybe<Scalars['BigInt']['input']>;
+  totalLossCount_lte?: InputMaybe<Scalars['BigInt']['input']>;
+  totalLossCount_not?: InputMaybe<Scalars['BigInt']['input']>;
+  totalLossCount_not_in?: InputMaybe<Array<Scalars['BigInt']['input']>>;
+  totalWinAmount?: InputMaybe<Scalars['BigInt']['input']>;
+  totalWinAmount_gt?: InputMaybe<Scalars['BigInt']['input']>;
+  totalWinAmount_gte?: InputMaybe<Scalars['BigInt']['input']>;
+  totalWinAmount_in?: InputMaybe<Array<Scalars['BigInt']['input']>>;
+  totalWinAmount_lt?: InputMaybe<Scalars['BigInt']['input']>;
+  totalWinAmount_lte?: InputMaybe<Scalars['BigInt']['input']>;
+  totalWinAmount_not?: InputMaybe<Scalars['BigInt']['input']>;
+  totalWinAmount_not_in?: InputMaybe<Array<Scalars['BigInt']['input']>>;
+  totalWinCount?: InputMaybe<Scalars['BigInt']['input']>;
+  totalWinCount_gt?: InputMaybe<Scalars['BigInt']['input']>;
+  totalWinCount_gte?: InputMaybe<Scalars['BigInt']['input']>;
+  totalWinCount_in?: InputMaybe<Array<Scalars['BigInt']['input']>>;
+  totalWinCount_lt?: InputMaybe<Scalars['BigInt']['input']>;
+  totalWinCount_lte?: InputMaybe<Scalars['BigInt']['input']>;
+  totalWinCount_not?: InputMaybe<Scalars['BigInt']['input']>;
+  totalWinCount_not_in?: InputMaybe<Array<Scalars['BigInt']['input']>>;
+  winStreak?: InputMaybe<Scalars['BigInt']['input']>;
+  winStreak_gt?: InputMaybe<Scalars['BigInt']['input']>;
+  winStreak_gte?: InputMaybe<Scalars['BigInt']['input']>;
+  winStreak_in?: InputMaybe<Array<Scalars['BigInt']['input']>>;
+  winStreak_lt?: InputMaybe<Scalars['BigInt']['input']>;
+  winStreak_lte?: InputMaybe<Scalars['BigInt']['input']>;
+  winStreak_not?: InputMaybe<Scalars['BigInt']['input']>;
+  winStreak_not_in?: InputMaybe<Array<Scalars['BigInt']['input']>>;
+};
+
+export enum User_OrderBy {
+  Address = 'address',
+  Bets = 'bets',
+  Id = 'id',
+  LastLogin = 'lastLogin',
+  LoginStreak = 'loginStreak',
+  LossStreak = 'lossStreak',
+  TotalLossAmount = 'totalLossAmount',
+  TotalLossCount = 'totalLossCount',
+  TotalWinAmount = 'totalWinAmount',
+  TotalWinCount = 'totalWinCount',
+  WinStreak = 'winStreak'
+}
+
 export type _Block_ = {
   __typename?: '_Block_';
   /** The hash of the block */
@@ -2270,14 +2473,14 @@ export type GetBetsQueryVariables = Exact<{
 }>;
 
 
-export type GetBetsQuery = { __typename?: 'Query', bets: Array<{ __typename?: 'Bet', id: any, betIntId: any, optionIndex: any, amount: any, user: any, poolIntId: any, blockNumber: any, blockTimestamp: any, transactionHash: any, pool: { __typename?: 'Pool', id: any, poolIntId: any, question: string, options: Array<string>, totalBets: any, totalBetsByOption: Array<any>, selectedOption: any, status: PoolStatus, decisionDate: any, betsCloseAt: any, creatorId: string, creatorName: string, imageUrl: string, chainId: any, chainName: string, isDraw: boolean, xPostId: string } }> };
+export type GetBetsQuery = { __typename?: 'Query', bets: Array<{ __typename?: 'Bet', id: any, betIntId: any, optionIndex: any, amount: any, userAddress: any, poolIntId: any, blockNumber: any, blockTimestamp: any, transactionHash: any, pool: { __typename?: 'Pool', id: any, poolIntId: any, question: string, options: Array<string>, totalBets: any, totalBetsByOption: Array<any>, selectedOption: any, status: PoolStatus, decisionDate: any, betsCloseAt: any, creatorId: string, creatorName: string, imageUrl: string, chainId: any, chainName: string, isDraw: boolean, xPostId: string } }> };
 
 export type GetBetsSubscriptionSubscriptionVariables = Exact<{
   filter: Bet_Filter;
 }>;
 
 
-export type GetBetsSubscriptionSubscription = { __typename?: 'Subscription', bets: Array<{ __typename?: 'Bet', id: any, betIntId: any, optionIndex: any, amount: any, user: any, poolIntId: any, blockNumber: any, blockTimestamp: any, transactionHash: any, pool: { __typename?: 'Pool', id: any, poolIntId: any, question: string, options: Array<string>, totalBets: any, totalBetsByOption: Array<any>, selectedOption: any, status: PoolStatus, decisionDate: any, betsCloseAt: any, creatorId: string, creatorName: string, imageUrl: string, chainId: any, chainName: string, isDraw: boolean, xPostId: string } }> };
+export type GetBetsSubscriptionSubscription = { __typename?: 'Subscription', bets: Array<{ __typename?: 'Bet', id: any, betIntId: any, optionIndex: any, amount: any, userAddress: any, poolIntId: any, blockNumber: any, blockTimestamp: any, transactionHash: any, pool: { __typename?: 'Pool', id: any, poolIntId: any, question: string, options: Array<string>, totalBets: any, totalBetsByOption: Array<any>, selectedOption: any, status: PoolStatus, decisionDate: any, betsCloseAt: any, creatorId: string, creatorName: string, imageUrl: string, chainId: any, chainName: string, isDraw: boolean, xPostId: string } }> };
 
 export type GetPoolQueryVariables = Exact<{
   poolId: Scalars['ID']['input'];
@@ -2296,7 +2499,7 @@ export type GetPoolSubscriptionSubscription = { __typename?: 'Subscription', poo
 
 export const GetPoolsDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"GetPools"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"filter"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"Pool_filter"}}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"orderBy"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"Pool_orderBy"}}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"orderDirection"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"OrderDirection"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"pools"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"where"},"value":{"kind":"Variable","name":{"kind":"Name","value":"filter"}}},{"kind":"Argument","name":{"kind":"Name","value":"orderBy"},"value":{"kind":"Variable","name":{"kind":"Name","value":"orderBy"}}},{"kind":"Argument","name":{"kind":"Name","value":"orderDirection"},"value":{"kind":"Variable","name":{"kind":"Name","value":"orderDirection"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"poolIntId"}},{"kind":"Field","name":{"kind":"Name","value":"question"}},{"kind":"Field","name":{"kind":"Name","value":"options"}},{"kind":"Field","name":{"kind":"Name","value":"totalBets"}},{"kind":"Field","name":{"kind":"Name","value":"totalBetsByOption"}},{"kind":"Field","name":{"kind":"Name","value":"selectedOption"}},{"kind":"Field","name":{"kind":"Name","value":"status"}},{"kind":"Field","name":{"kind":"Name","value":"imageUrl"}},{"kind":"Field","name":{"kind":"Name","value":"category"}},{"kind":"Field","name":{"kind":"Name","value":"xPostId"}},{"kind":"Field","name":{"kind":"Name","value":"creatorName"}},{"kind":"Field","name":{"kind":"Name","value":"creatorId"}},{"kind":"Field","name":{"kind":"Name","value":"closureCriteria"}},{"kind":"Field","name":{"kind":"Name","value":"closureInstructions"}},{"kind":"Field","name":{"kind":"Name","value":"betsCloseAt"}},{"kind":"Field","name":{"kind":"Name","value":"decisionDate"}},{"kind":"Field","name":{"kind":"Name","value":"chainId"}},{"kind":"Field","name":{"kind":"Name","value":"chainName"}},{"kind":"Field","name":{"kind":"Name","value":"isDraw"}},{"kind":"Field","name":{"kind":"Name","value":"createdBlockNumber"}},{"kind":"Field","name":{"kind":"Name","value":"createdBlockTimestamp"}},{"kind":"Field","name":{"kind":"Name","value":"createdTransactionHash"}},{"kind":"Field","name":{"kind":"Name","value":"lastUpdatedBlockNumber"}},{"kind":"Field","name":{"kind":"Name","value":"lastUpdatedBlockTimestamp"}},{"kind":"Field","name":{"kind":"Name","value":"lastUpdatedTransactionHash"}},{"kind":"Field","name":{"kind":"Name","value":"gradedBlockNumber"}},{"kind":"Field","name":{"kind":"Name","value":"gradedBlockTimestamp"}},{"kind":"Field","name":{"kind":"Name","value":"gradedTransactionHash"}}]}}]}}]} as unknown as DocumentNode<GetPoolsQuery, GetPoolsQueryVariables>;
 export const GetPoolsSubscriptionDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"subscription","name":{"kind":"Name","value":"GetPoolsSubscription"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"filter"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"Pool_filter"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"pools"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"where"},"value":{"kind":"Variable","name":{"kind":"Name","value":"filter"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"poolIntId"}},{"kind":"Field","name":{"kind":"Name","value":"question"}},{"kind":"Field","name":{"kind":"Name","value":"options"}},{"kind":"Field","name":{"kind":"Name","value":"totalBets"}},{"kind":"Field","name":{"kind":"Name","value":"totalBetsByOption"}},{"kind":"Field","name":{"kind":"Name","value":"selectedOption"}},{"kind":"Field","name":{"kind":"Name","value":"status"}},{"kind":"Field","name":{"kind":"Name","value":"imageUrl"}},{"kind":"Field","name":{"kind":"Name","value":"category"}},{"kind":"Field","name":{"kind":"Name","value":"xPostId"}},{"kind":"Field","name":{"kind":"Name","value":"creatorName"}},{"kind":"Field","name":{"kind":"Name","value":"creatorId"}},{"kind":"Field","name":{"kind":"Name","value":"closureCriteria"}},{"kind":"Field","name":{"kind":"Name","value":"closureInstructions"}},{"kind":"Field","name":{"kind":"Name","value":"betsCloseAt"}},{"kind":"Field","name":{"kind":"Name","value":"decisionDate"}},{"kind":"Field","name":{"kind":"Name","value":"chainId"}},{"kind":"Field","name":{"kind":"Name","value":"chainName"}},{"kind":"Field","name":{"kind":"Name","value":"isDraw"}},{"kind":"Field","name":{"kind":"Name","value":"createdBlockNumber"}},{"kind":"Field","name":{"kind":"Name","value":"createdBlockTimestamp"}},{"kind":"Field","name":{"kind":"Name","value":"createdTransactionHash"}},{"kind":"Field","name":{"kind":"Name","value":"lastUpdatedBlockNumber"}},{"kind":"Field","name":{"kind":"Name","value":"lastUpdatedBlockTimestamp"}},{"kind":"Field","name":{"kind":"Name","value":"lastUpdatedTransactionHash"}},{"kind":"Field","name":{"kind":"Name","value":"gradedBlockNumber"}},{"kind":"Field","name":{"kind":"Name","value":"gradedBlockTimestamp"}},{"kind":"Field","name":{"kind":"Name","value":"gradedTransactionHash"}}]}}]}}]} as unknown as DocumentNode<GetPoolsSubscriptionSubscription, GetPoolsSubscriptionSubscriptionVariables>;
-export const GetBetsDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"GetBets"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"first"}},"type":{"kind":"NamedType","name":{"kind":"Name","value":"Int"}},"defaultValue":{"kind":"IntValue","value":"10"}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"filter"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"Bet_filter"}}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"orderBy"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"Bet_orderBy"}}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"orderDirection"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"OrderDirection"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"bets"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"first"},"value":{"kind":"Variable","name":{"kind":"Name","value":"first"}}},{"kind":"Argument","name":{"kind":"Name","value":"where"},"value":{"kind":"Variable","name":{"kind":"Name","value":"filter"}}},{"kind":"Argument","name":{"kind":"Name","value":"orderBy"},"value":{"kind":"Variable","name":{"kind":"Name","value":"orderBy"}}},{"kind":"Argument","name":{"kind":"Name","value":"orderDirection"},"value":{"kind":"Variable","name":{"kind":"Name","value":"orderDirection"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"betIntId"}},{"kind":"Field","name":{"kind":"Name","value":"optionIndex"}},{"kind":"Field","name":{"kind":"Name","value":"amount"}},{"kind":"Field","name":{"kind":"Name","value":"user"}},{"kind":"Field","name":{"kind":"Name","value":"poolIntId"}},{"kind":"Field","name":{"kind":"Name","value":"blockNumber"}},{"kind":"Field","name":{"kind":"Name","value":"blockTimestamp"}},{"kind":"Field","name":{"kind":"Name","value":"transactionHash"}},{"kind":"Field","name":{"kind":"Name","value":"pool"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"poolIntId"}},{"kind":"Field","name":{"kind":"Name","value":"question"}},{"kind":"Field","name":{"kind":"Name","value":"options"}},{"kind":"Field","name":{"kind":"Name","value":"totalBets"}},{"kind":"Field","name":{"kind":"Name","value":"totalBetsByOption"}},{"kind":"Field","name":{"kind":"Name","value":"selectedOption"}},{"kind":"Field","name":{"kind":"Name","value":"status"}},{"kind":"Field","name":{"kind":"Name","value":"decisionDate"}},{"kind":"Field","name":{"kind":"Name","value":"betsCloseAt"}},{"kind":"Field","name":{"kind":"Name","value":"creatorId"}},{"kind":"Field","name":{"kind":"Name","value":"creatorName"}},{"kind":"Field","name":{"kind":"Name","value":"imageUrl"}},{"kind":"Field","name":{"kind":"Name","value":"chainId"}},{"kind":"Field","name":{"kind":"Name","value":"chainName"}},{"kind":"Field","name":{"kind":"Name","value":"isDraw"}},{"kind":"Field","name":{"kind":"Name","value":"xPostId"}}]}}]}}]}}]} as unknown as DocumentNode<GetBetsQuery, GetBetsQueryVariables>;
-export const GetBetsSubscriptionDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"subscription","name":{"kind":"Name","value":"GetBetsSubscription"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"filter"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"Bet_filter"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"bets"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"where"},"value":{"kind":"Variable","name":{"kind":"Name","value":"filter"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"betIntId"}},{"kind":"Field","name":{"kind":"Name","value":"optionIndex"}},{"kind":"Field","name":{"kind":"Name","value":"amount"}},{"kind":"Field","name":{"kind":"Name","value":"user"}},{"kind":"Field","name":{"kind":"Name","value":"poolIntId"}},{"kind":"Field","name":{"kind":"Name","value":"blockNumber"}},{"kind":"Field","name":{"kind":"Name","value":"blockTimestamp"}},{"kind":"Field","name":{"kind":"Name","value":"transactionHash"}},{"kind":"Field","name":{"kind":"Name","value":"pool"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"poolIntId"}},{"kind":"Field","name":{"kind":"Name","value":"question"}},{"kind":"Field","name":{"kind":"Name","value":"options"}},{"kind":"Field","name":{"kind":"Name","value":"totalBets"}},{"kind":"Field","name":{"kind":"Name","value":"totalBetsByOption"}},{"kind":"Field","name":{"kind":"Name","value":"selectedOption"}},{"kind":"Field","name":{"kind":"Name","value":"status"}},{"kind":"Field","name":{"kind":"Name","value":"decisionDate"}},{"kind":"Field","name":{"kind":"Name","value":"betsCloseAt"}},{"kind":"Field","name":{"kind":"Name","value":"creatorId"}},{"kind":"Field","name":{"kind":"Name","value":"creatorName"}},{"kind":"Field","name":{"kind":"Name","value":"imageUrl"}},{"kind":"Field","name":{"kind":"Name","value":"chainId"}},{"kind":"Field","name":{"kind":"Name","value":"chainName"}},{"kind":"Field","name":{"kind":"Name","value":"isDraw"}},{"kind":"Field","name":{"kind":"Name","value":"xPostId"}}]}}]}}]}}]} as unknown as DocumentNode<GetBetsSubscriptionSubscription, GetBetsSubscriptionSubscriptionVariables>;
+export const GetBetsDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"GetBets"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"first"}},"type":{"kind":"NamedType","name":{"kind":"Name","value":"Int"}},"defaultValue":{"kind":"IntValue","value":"10"}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"filter"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"Bet_filter"}}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"orderBy"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"Bet_orderBy"}}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"orderDirection"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"OrderDirection"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"bets"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"first"},"value":{"kind":"Variable","name":{"kind":"Name","value":"first"}}},{"kind":"Argument","name":{"kind":"Name","value":"where"},"value":{"kind":"Variable","name":{"kind":"Name","value":"filter"}}},{"kind":"Argument","name":{"kind":"Name","value":"orderBy"},"value":{"kind":"Variable","name":{"kind":"Name","value":"orderBy"}}},{"kind":"Argument","name":{"kind":"Name","value":"orderDirection"},"value":{"kind":"Variable","name":{"kind":"Name","value":"orderDirection"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"betIntId"}},{"kind":"Field","name":{"kind":"Name","value":"optionIndex"}},{"kind":"Field","name":{"kind":"Name","value":"amount"}},{"kind":"Field","name":{"kind":"Name","value":"userAddress"}},{"kind":"Field","name":{"kind":"Name","value":"poolIntId"}},{"kind":"Field","name":{"kind":"Name","value":"blockNumber"}},{"kind":"Field","name":{"kind":"Name","value":"blockTimestamp"}},{"kind":"Field","name":{"kind":"Name","value":"transactionHash"}},{"kind":"Field","name":{"kind":"Name","value":"pool"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"poolIntId"}},{"kind":"Field","name":{"kind":"Name","value":"question"}},{"kind":"Field","name":{"kind":"Name","value":"options"}},{"kind":"Field","name":{"kind":"Name","value":"totalBets"}},{"kind":"Field","name":{"kind":"Name","value":"totalBetsByOption"}},{"kind":"Field","name":{"kind":"Name","value":"selectedOption"}},{"kind":"Field","name":{"kind":"Name","value":"status"}},{"kind":"Field","name":{"kind":"Name","value":"decisionDate"}},{"kind":"Field","name":{"kind":"Name","value":"betsCloseAt"}},{"kind":"Field","name":{"kind":"Name","value":"creatorId"}},{"kind":"Field","name":{"kind":"Name","value":"creatorName"}},{"kind":"Field","name":{"kind":"Name","value":"imageUrl"}},{"kind":"Field","name":{"kind":"Name","value":"chainId"}},{"kind":"Field","name":{"kind":"Name","value":"chainName"}},{"kind":"Field","name":{"kind":"Name","value":"isDraw"}},{"kind":"Field","name":{"kind":"Name","value":"xPostId"}}]}}]}}]}}]} as unknown as DocumentNode<GetBetsQuery, GetBetsQueryVariables>;
+export const GetBetsSubscriptionDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"subscription","name":{"kind":"Name","value":"GetBetsSubscription"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"filter"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"Bet_filter"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"bets"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"where"},"value":{"kind":"Variable","name":{"kind":"Name","value":"filter"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"betIntId"}},{"kind":"Field","name":{"kind":"Name","value":"optionIndex"}},{"kind":"Field","name":{"kind":"Name","value":"amount"}},{"kind":"Field","name":{"kind":"Name","value":"userAddress"}},{"kind":"Field","name":{"kind":"Name","value":"poolIntId"}},{"kind":"Field","name":{"kind":"Name","value":"blockNumber"}},{"kind":"Field","name":{"kind":"Name","value":"blockTimestamp"}},{"kind":"Field","name":{"kind":"Name","value":"transactionHash"}},{"kind":"Field","name":{"kind":"Name","value":"pool"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"poolIntId"}},{"kind":"Field","name":{"kind":"Name","value":"question"}},{"kind":"Field","name":{"kind":"Name","value":"options"}},{"kind":"Field","name":{"kind":"Name","value":"totalBets"}},{"kind":"Field","name":{"kind":"Name","value":"totalBetsByOption"}},{"kind":"Field","name":{"kind":"Name","value":"selectedOption"}},{"kind":"Field","name":{"kind":"Name","value":"status"}},{"kind":"Field","name":{"kind":"Name","value":"decisionDate"}},{"kind":"Field","name":{"kind":"Name","value":"betsCloseAt"}},{"kind":"Field","name":{"kind":"Name","value":"creatorId"}},{"kind":"Field","name":{"kind":"Name","value":"creatorName"}},{"kind":"Field","name":{"kind":"Name","value":"imageUrl"}},{"kind":"Field","name":{"kind":"Name","value":"chainId"}},{"kind":"Field","name":{"kind":"Name","value":"chainName"}},{"kind":"Field","name":{"kind":"Name","value":"isDraw"}},{"kind":"Field","name":{"kind":"Name","value":"xPostId"}}]}}]}}]}}]} as unknown as DocumentNode<GetBetsSubscriptionSubscription, GetBetsSubscriptionSubscriptionVariables>;
 export const GetPoolDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"GetPool"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"poolId"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"ID"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"pool"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"id"},"value":{"kind":"Variable","name":{"kind":"Name","value":"poolId"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"poolIntId"}},{"kind":"Field","name":{"kind":"Name","value":"imageUrl"}},{"kind":"Field","name":{"kind":"Name","value":"creatorName"}},{"kind":"Field","name":{"kind":"Name","value":"creatorId"}},{"kind":"Field","name":{"kind":"Name","value":"question"}},{"kind":"Field","name":{"kind":"Name","value":"options"}},{"kind":"Field","name":{"kind":"Name","value":"betsCloseAt"}},{"kind":"Field","name":{"kind":"Name","value":"totalBets"}},{"kind":"Field","name":{"kind":"Name","value":"totalBetsByOption"}},{"kind":"Field","name":{"kind":"Name","value":"selectedOption"}},{"kind":"Field","name":{"kind":"Name","value":"status"}},{"kind":"Field","name":{"kind":"Name","value":"chainId"}},{"kind":"Field","name":{"kind":"Name","value":"chainName"}},{"kind":"Field","name":{"kind":"Name","value":"xPostId"}},{"kind":"Field","name":{"kind":"Name","value":"isDraw"}}]}}]}}]} as unknown as DocumentNode<GetPoolQuery, GetPoolQueryVariables>;
 export const GetPoolSubscriptionDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"subscription","name":{"kind":"Name","value":"GetPoolSubscription"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"poolId"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"ID"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"pool"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"id"},"value":{"kind":"Variable","name":{"kind":"Name","value":"poolId"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"poolIntId"}},{"kind":"Field","name":{"kind":"Name","value":"imageUrl"}},{"kind":"Field","name":{"kind":"Name","value":"creatorName"}},{"kind":"Field","name":{"kind":"Name","value":"creatorId"}},{"kind":"Field","name":{"kind":"Name","value":"question"}},{"kind":"Field","name":{"kind":"Name","value":"options"}},{"kind":"Field","name":{"kind":"Name","value":"betsCloseAt"}},{"kind":"Field","name":{"kind":"Name","value":"totalBets"}},{"kind":"Field","name":{"kind":"Name","value":"totalBetsByOption"}},{"kind":"Field","name":{"kind":"Name","value":"selectedOption"}},{"kind":"Field","name":{"kind":"Name","value":"status"}},{"kind":"Field","name":{"kind":"Name","value":"chainId"}},{"kind":"Field","name":{"kind":"Name","value":"chainName"}},{"kind":"Field","name":{"kind":"Name","value":"xPostId"}},{"kind":"Field","name":{"kind":"Name","value":"isDraw"}}]}}]}}]} as unknown as DocumentNode<GetPoolSubscriptionSubscription, GetPoolSubscriptionSubscriptionVariables>;

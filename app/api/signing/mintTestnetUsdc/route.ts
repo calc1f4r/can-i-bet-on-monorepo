@@ -1,11 +1,10 @@
-import MockUSDCAbi from "@/contracts/out/MockUSDC.sol/MockUSDC.json";
+import USDPAbi from "@/contracts/out/USDP.sol/USDP.json";
 import { CHAIN_CONFIG } from "@/lib/config";
 import { USDC_DECIMALS } from "@/lib/utils";
 import { ethers } from "ethers";
 import Redis from "ioredis";
 import { NextResponse } from "next/server";
-import { base, baseSepolia } from "viem/chains";
-
+import { scroll, scrollSepolia } from "viem/chains";
 export type TopUpUsdcBalanceParams = {
   chainId: string | number;
   walletAddress: string;
@@ -23,11 +22,11 @@ export type TopUpUsdcBalanceResponse = {
 const PRIVATE_CHAIN_CONFIG: {
   [key: keyof typeof CHAIN_CONFIG]: { rpcUrl: string };
 } = {
-  [baseSepolia.id]: {
-    rpcUrl: process.env.BASE_SEPOLIA_RPC_URL || "", // Move to env variable
+  [scrollSepolia.id]: {
+    rpcUrl: process.env.SCROLL_SEPOLIA_RPC_URL || "", // Move to env variable
   },
-  [base.id]: {
-    rpcUrl: process.env.BASE_RPC_URL || "", // Move to env variable
+  [scroll.id]: {
+    rpcUrl: process.env.SCROLL_RPC_URL || "", // Move to env variable
   },
 };
 
@@ -141,7 +140,7 @@ export async function POST(request: Request) {
 
     const usdcContract = new ethers.Contract(
       chainConfig.usdcAddress,
-      MockUSDCAbi.abi,
+      USDPAbi.abi,
       wallet
     );
     const balance = await usdcContract.balanceOf(body.walletAddress);

@@ -44,8 +44,8 @@ const defaultPool = {
   gradedBlockNumber: "0",
   gradedBlockTimestamp: "0",
   gradedTransactionHash: "0x0000000000000000000000000000000000000000",
-  chainId: "84532",
-  chainName: "base-sepolia",
+  chainId: "534351",
+  chainName: "scroll-sepolia",
   xPostId: "1893049568805486621",
 };
 

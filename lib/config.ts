@@ -1,7 +1,9 @@
-import baseIcon from "@/stories/assets/crypto/base-full-white.svg";
-import baseSepoliaIcon from "@/stories/assets/crypto/base-full.svg";
+import {
+  default as scrollIcon,
+  default as scrollSepoliaIcon,
+} from "@/stories/assets/crypto/scroll-full.svg";
 import usdpLogo from "@/stories/assets/usdp-logo.svg";
-import { base, baseSepolia, Chain } from "viem/chains";
+import { Chain, scroll, scrollSepolia } from "viem/chains";
 
 export type ChainConfig = {
   chain: Chain;
@@ -18,23 +20,23 @@ export type ChainConfig = {
 // chainId -> per-chain config
 // CHANGEME WHEN ADDING A NEW CHAIN OR DEPLOYING A NEW CONTRACT
 export const CHAIN_CONFIG: Record<string, ChainConfig> = {
-  [baseSepolia.id]: {
-    chain: baseSepolia,
-    applicationContractAddress: "0xcA7214565ae6994F81e5dd1ed97a4F817afa0A25",
-    iconUrl: baseSepoliaIcon,
+  [scrollSepolia.id]: {
+    chain: scrollSepolia,
+    applicationContractAddress: "0x2866B287F871F90A0494929877D575D1bA02d342",
+    iconUrl: scrollSepoliaIcon,
     backgroundColor: "#FFF",
-    usdcAddress: "0x3224f86e3e6dfC22aC1d04Ad4037e9b1983D7ba2",
+    usdcAddress: "0xe4a063979014348Ae7D5811602Bebdd680ecf4e0",
     nativeCurrency: {
       symbol: "ETH",
     },
     usdcPrefix: { src: usdpLogo, width: 20, height: 20 },
   },
-  [base.id]: {
-    chain: base,
-    applicationContractAddress: "0x6853357edeEd20Af6136510Fb2E5A53aBdb91e16",
-    iconUrl: baseIcon,
-    backgroundColor: "#0052FF",
-    usdcAddress: "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
+  [scroll.id]: {
+    chain: scroll,
+    applicationContractAddress: "0x2866B287F871F90A0494929877D575D1bA02d342",
+    iconUrl: scrollIcon,
+    backgroundColor: "#FFF",
+    usdcAddress: "0xe4a063979014348Ae7D5811602Bebdd680ecf4e0",
     nativeCurrency: {
       symbol: "ETH",
     },

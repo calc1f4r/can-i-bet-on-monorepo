@@ -6,11 +6,11 @@ schema:
 dataSources:
   - kind: ethereum
     name: BettingPools
-    network: sonic-blaze
+    network: scroll-sepolia
     source:
-      address: "0xc247aA0268aCe1c51f8d58Bd471451a2421B8642"
+      address: "0x2866B287F871F90A0494929877D575D1bA02d342"
       abi: BettingPools
-      startBlock: 25004000
+      startBlock: 8490861
     mapping:
       kind: ethereum/events
       apiVersion: 0.0.9

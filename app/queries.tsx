@@ -108,7 +108,7 @@ export const GET_BETS = gql(`
       betIntId
       optionIndex
       amount
-      user
+      userAddress
       poolIntId
       blockNumber
       blockTimestamp
@@ -147,7 +147,7 @@ subscription GetBetsSubscription(
       betIntId
       optionIndex
       amount
-      user
+      userAddress
       poolIntId
       blockNumber
       blockTimestamp

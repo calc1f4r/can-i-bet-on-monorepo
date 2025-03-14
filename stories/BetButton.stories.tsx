@@ -83,7 +83,7 @@ export const OptionA: Story = {
     optionIndex: 0,
     isSelected: false,
     poolId: "pool-123",
-    chainId: "84532",
+    chainId: "534351",
   },
 };
 
@@ -114,7 +114,7 @@ export const OptionB: Story = {
     optionIndex: 1,
     isSelected: false,
     poolId: "pool-123",
-    chainId: "84532",
+    chainId: "534351",
   },
 };
 
@@ -145,7 +145,7 @@ export const OptionC: Story = {
     optionIndex: 2,
     isSelected: false,
     poolId: "pool-123",
-    chainId: "84532",
+    chainId: "534351",
   },
 };
 
@@ -176,7 +176,7 @@ export const OptionD: Story = {
     optionIndex: 3,
     isSelected: false,
     poolId: "pool-123",
-    chainId: "84532",
+    chainId: "534351",
   },
 };
 
@@ -207,7 +207,7 @@ export const OptionE: Story = {
     optionIndex: 4,
     isSelected: false,
     poolId: "pool-123",
-    chainId: "84532",
+    chainId: "534351",
   },
 };
 
@@ -246,6 +246,6 @@ export const LongTextWrapped: Story = {
     option: "This is a very long option that wraps",
     optionIndex: 2,
     poolId: "pool-123",
-    chainId: "84532",
+    chainId: "534351",
   },
 };

@@ -1,4 +1,4 @@
-import MockUSDCAbi from "@/contracts/out/MockUSDC.sol/MockUSDC.json";
+import USDPAbi from "@/contracts/out/USDP.sol/USDP.json";
 import { USDC_DECIMALS } from "@/lib/utils";
 import { useWallets } from "@privy-io/react-auth";
 import { ethers } from "ethers";
@@ -65,7 +65,7 @@ export const useUsdcBalance = () => {
       // Create contract instance
       const usdcContract = new ethers.Contract(
         chainConfig.usdcAddress,
-        MockUSDCAbi.abi,
+        USDPAbi.abi,
         ethersProvider
       );
 

@@ -211,7 +211,7 @@ const mocks = [
     result: {
       data: {
         bets: mockBets.filter(
-          (bet) => bet.user === "0xabc123def456abc123def456abc123def456abc1"
+          (bet) => bet.userAddress === "0xabc123def456abc123def456abc123def456abc1"
         ),
       },
     },

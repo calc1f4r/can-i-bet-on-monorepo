@@ -5,3 +5,9 @@ libs = ["lib"]
 via-ir = true
 
 # See more config options https://github.com/foundry-rs/foundry/blob/master/crates/config/README.md#all-options
+
+[etherscan]
+scroll-sepolia = { key = "scroll-sepolia", url = "https://scroll-sepolia.g.alchemy.com/v2/aaTYqdoeV1IOX606RuMBcEAVJH59sP2k", chain = "scroll-sepolia"}
+
+[rpc_endpoints]
+scroll-sepolia = { url = "https://scroll-sepolia.g.alchemy.com/v2/aaTYqdoeV1IOX606RuMBcEAVJH59sP2k" }

@@ -1,4 +1,4 @@
-import MockUSDCAbi from "@/contracts/out/MockUSDC.sol/MockUSDC.json";
+import USDPAbi from "@/contracts/out/USDP.sol/USDP.json";
 import { CHAIN_CONFIG } from "@/lib/config";
 import { ethers, ZeroAddress } from "ethers";
 import { NextResponse } from "next/server";
@@ -15,12 +15,12 @@ type GenerateSigningPropsRequest = {
 const PRIVATE_CHAIN_CONFIG: {
   [key: keyof typeof CHAIN_CONFIG]: { rpcUrl: string };
 } = {
-  "8453": {
-    rpcUrl: process.env.BASE_RPC_URL || "",
-  },
   // Using the same config as in sendSignedPlaceBet
-  "84532": {
-    rpcUrl: process.env.BASE_SEPOLIA_RPC_URL || "",
+  "534351": {
+    rpcUrl: process.env.SCROLL_SEPOLIA_RPC_URL || "",
+  },
+  "534352": {
+    rpcUrl: process.env.SCROLL_RPC_URL || "",
   },
 };
 
@@ -61,7 +61,7 @@ export async function POST(request: Request) {
     const wallet = new ethers.Wallet(process.env.MAIN_PRIVATE_KEY!, provider);
     const usdcContract = new ethers.Contract(
       chainConfig.usdcAddress,
-      MockUSDCAbi.abi,
+      USDPAbi.abi,
       wallet
     );
 

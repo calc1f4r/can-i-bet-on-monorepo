@@ -1,14 +1,6 @@
 "use client";
 import { PrivyProvider } from "@privy-io/react-auth";
-import {
-  arbitrum,
-  arbitrumSepolia,
-  base,
-  baseSepolia,
-  mainnet,
-  scrollSepolia,
-  sepolia,
-} from "viem/chains";
+import { arbitrumSepolia, baseSepolia, scrollSepolia } from "viem/chains";
 import { EmbeddedWalletProvider } from "./EmbeddedWalletProvider";
 
 export default function PrivyProviderWrapper({
@@ -21,15 +13,7 @@ export default function PrivyProviderWrapper({
       appId="cm7b6229i003ccgeozvxyjv2h"
       config={{
         defaultChain: baseSepolia,
-        supportedChains: [
-          baseSepolia,
-          arbitrumSepolia,
-          scrollSepolia,
-          base,
-          arbitrum,
-          mainnet,
-          sepolia,
-        ],
+        supportedChains: [baseSepolia, arbitrumSepolia, scrollSepolia],
         // Customize Privy's appearance in your app
         // TODO Don't harcode theme
         appearance: {

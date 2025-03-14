@@ -107,24 +107,24 @@ const ActivityLineComponent: FC<ActivityLineProps> = ({
               <div className="sm:hidden flex items-center">
                 <Jazzicon
                   diameter={14}
-                  seed={jsNumberForAddress(String(bet.user))}
+                  seed={jsNumberForAddress(String(bet.userAddress))}
                 />
               </div>
               <span className="hidden sm:inline">
                 <Jazzicon
                   diameter={18}
-                  seed={jsNumberForAddress(String(bet.user))}
+                  seed={jsNumberForAddress(String(bet.userAddress))}
                 />
               </span>
-              <Link href={`/users/${bet.user}`}>
+              <Link href={`/users/${bet.userAddress}`}>
                 <PlayerAddressChip
-                  address={bet.user}
+                  address={bet.userAddress}
                   showAvatar={false}
                   variant="xs"
                   className="sm:hidden hover:underline"
                 />
                 <PlayerAddressChip
-                  address={bet.user}
+                  address={bet.userAddress}
                   showAvatar={false}
                   variant="small"
                   className="hidden sm:inline hover:underline"

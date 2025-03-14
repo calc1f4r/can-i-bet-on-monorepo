@@ -53,7 +53,7 @@ export function PrivyLoginButton() {
     onComplete: async ({ user }) => {
       console.log("login complete", embeddedWallet, user);
       const result = await topUpUsdcBalance({
-        chainId: parseChainId("84532"), //We can always top up user on base sepolia
+        chainId: parseChainId("534351"),
         walletAddress: user.wallet?.address || "",
       });
 

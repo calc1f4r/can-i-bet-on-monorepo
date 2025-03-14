@@ -33,7 +33,7 @@ const mockPool1 = {
   gradedBlockTimestamp: "0",
   gradedTransactionHash: "0x0",
   xPostId: "123",
-  chainId: "84532",
+  chainId: "534351",
   chainName: "base-sepolia",
 } satisfies GetPoolsQuery["pools"][0];
 
@@ -65,7 +65,7 @@ const mockPool3 = {
   gradedBlockTimestamp: "0",
   gradedTransactionHash: "0x0",
   xPostId: "123",
-  chainId: "84532",
+  chainId: "534351",
   chainName: "base-sepolia",
 } satisfies GetPoolsQuery["pools"][0];
 
@@ -114,7 +114,7 @@ const meta: Meta<typeof PlaceBetCard> = {
         wallets: [
           {
             address: "0x1234567890123456789012345678901234567890",
-            chainId: "84532",
+            chainId: "534351",
           },
         ],
       },

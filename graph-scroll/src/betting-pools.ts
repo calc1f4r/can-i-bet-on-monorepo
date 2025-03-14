@@ -19,23 +19,22 @@ import {
 const chainIdToNetworkName = (networkName: string): i32 => {
   if (networkName == "base-sepolia") return 84532;
   if (networkName == "base") return 8453;
-  if (networkName == "base-mainnet") return 8453;
   if (networkName == "mainnet") return 1;
   if (networkName == "sepolia") return 11155111;
   if (networkName == "arbitrum-sepolia") return 421614;
   if (networkName == "arbitrum") return 42161;
-  if (networkName == "arbitrum-mainnet") return 42161;
   if (networkName == "optimism-sepolia") return 111550111;
   if (networkName == "optimism") return 10;
-  if (networkName == "optimism-mainnet") return 10;
+  if (networkName == "scroll-sepolia") return 534351;
+  if (networkName == "scroll") return 534352;
 
   throw new Error(`Network ${networkName} not supported`);
 };
 
 export function handleBetPlaced(event: BetPlacedEvent): void {
   // dataSource.network()
-  const betId = Bytes.fromByteArray(Bytes.fromBigInt(event.params.betId));
-  const poolId = Bytes.fromByteArray(Bytes.fromBigInt(event.params.poolId));
+  const betId = event.params.betId.toString();
+  const poolId = event.params.poolId.toString();
 
   const networkName = dataSource.network();
   const chainId = chainIdToNetworkName(networkName);
@@ -62,7 +61,7 @@ export function handleBetPlaced(event: BetPlacedEvent): void {
   const bet = new Bet(betId);
   bet.betIntId = event.params.betId;
   bet.poolIntId = event.params.poolId;
-  bet.poolIdHex = poolId;
+  bet.poolIdHex = Bytes.fromUTF8(poolId);
   bet.pool = poolId;
   bet.user = event.params.user;
   bet.optionIndex = event.params.optionIndex;
@@ -78,6 +77,7 @@ export function handleBetPlaced(event: BetPlacedEvent): void {
   bet.payoutClaimedBlockNumber = null;
   bet.payoutClaimedBlockTimestamp = null;
   bet.payoutClaimedTransactionHash = null;
+  bet.userAddress = event.params.user;
 
   // Update Pool totals and timestamps
   const pool = Pool.load(poolId);
@@ -102,7 +102,7 @@ export function handleBetPlaced(event: BetPlacedEvent): void {
 }
 
 export function handlePoolClosed(event: PoolClosedEvent): void {
-  const poolId = Bytes.fromByteArray(Bytes.fromBigInt(event.params.poolId));
+  const poolId = event.params.poolId.toString();
 
   const networkName = dataSource.network();
   const chainId = chainIdToNetworkName(networkName);
@@ -135,7 +135,7 @@ export function handlePoolClosed(event: PoolClosedEvent): void {
 }
 
 export function handlePoolCreated(event: PoolCreatedEvent): void {
-  const poolId = Bytes.fromByteArray(Bytes.fromBigInt(event.params.poolId));
+  const poolId = event.params.poolId.toString();
 
   const networkName = dataSource.network();
   const chainId = chainIdToNetworkName(networkName);
@@ -200,11 +200,11 @@ export function handlePoolCreated(event: PoolCreatedEvent): void {
 }
 
 export function handleTwitterPostIdSet(event: TwitterPostIdSetEvent): void {
-  const poolId = Bytes.fromByteArray(Bytes.fromBigInt(event.params.poolId));
+  const poolId = event.params.poolId.toString();
 
   const entity = new TwitterPostIdSet(poolId);
   entity.poolIntId = event.params.poolId;
-  entity.poolIdHex = poolId;
+  entity.poolIdHex = Bytes.fromUTF8(poolId);
   entity.xPostId = event.params.twitterPostId;
   entity.pool = poolId;
 
@@ -223,15 +223,15 @@ export function handleTwitterPostIdSet(event: TwitterPostIdSetEvent): void {
 }
 
 export function handlePayoutClaimed(event: PayoutClaimedEvent): void {
-  const betId = Bytes.fromByteArray(Bytes.fromBigInt(event.params.betId));
-  const poolId = Bytes.fromByteArray(Bytes.fromBigInt(event.params.poolId));
+  const betId = event.params.betId.toString();
+  const poolId = event.params.poolId.toString();
 
   const networkName = dataSource.network();
   const chainId = chainIdToNetworkName(networkName);
 
   // Create PayoutClaimed entity
   const entity = new PayoutClaimed(
-    event.transaction.hash.concatI32(event.logIndex.toI32())
+    event.transaction.hash.concatI32(event.logIndex.toI32()).toHexString()
   );
   entity.betId = event.params.betId;
   entity.poolId = event.params.poolId;

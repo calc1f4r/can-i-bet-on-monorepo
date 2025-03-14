@@ -47,7 +47,7 @@ export const BetList = ({
     filter.pool = poolId;
   }
   if (userId) {
-    filter.user = userId;
+    filter.userAddress = userId;
   }
 
   const [sortField, setSortField] = useState<BetPlaced_OrderBy>(
@@ -311,7 +311,7 @@ export const BetList = ({
                       <td className="py-4 px-6 text-center">
                         <div className="flex justify-center">
                           <PlayerAddressChip
-                            address={bet.user}
+                            address={bet.userAddress}
                             variant="small"
                             showAvatar={false}
                           />
@@ -375,7 +375,7 @@ export const BetList = ({
                     {variant === "poolDrilldown" && (
                       <div className="text-sm mt-0.5">
                         {/* <PlayerAddressChip
-                          address={bet.user}
+                          address={bet.userAddress}
                           variant="default"
                           showAvatar={false}
                         /> */}

@@ -93,10 +93,10 @@ export const parseChainId = (chainId: number | string): string => {
     parsedChainId = chainId.replace("eip155:", "");
   }
 
-  // If chain config doesn't exist, fallback to Base Sepolia
+  // If chain config doesn't exist, fallback to Scroll Sepolia
   // TODO Disgusting
   if (!CHAIN_CONFIG[parsedChainId]) {
-    parsedChainId = 84532;
+    parsedChainId = 534351;
   }
 
   return String(parsedChainId);
