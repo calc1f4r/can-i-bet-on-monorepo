@@ -78,6 +78,7 @@ export function handleBetPlaced(event: BetPlacedEvent): void {
   bet.payoutClaimedBlockTimestamp = null;
   bet.payoutClaimedTransactionHash = null;
   bet.userAddress = event.params.user;
+  bet.outcome = "NONE";
 
   // Update Pool totals and timestamps
   const pool = Pool.load(poolId);
@@ -124,6 +125,7 @@ export function handlePoolClosed(event: PoolClosedEvent): void {
   }
   pool.selectedOption = event.params.selectedOption;
   pool.status = "GRADED";
+  pool.decisionTime = event.params.decisionTime;
 
   // Update graded timestamps
   pool.gradedBlockNumber = event.block.number;
@@ -147,7 +149,7 @@ export function handlePoolCreated(event: PoolCreatedEvent): void {
   entity.question = event.params.params.question;
   entity.options = event.params.params.options;
   entity.betsCloseAt = event.params.params.betsCloseAt;
-  entity.decisionDate = event.params.params.decisionDate;
+  entity.decisionTime = BigInt.fromI32(0); // Initialize with 0
   entity.imageUrl = event.params.params.imageUrl;
   entity.category = event.params.params.category;
   entity.creatorName = event.params.params.creatorName;
@@ -175,7 +177,7 @@ export function handlePoolCreated(event: PoolCreatedEvent): void {
   pool.closureCriteria = event.params.params.closureCriteria;
   pool.closureInstructions = event.params.params.closureInstructions;
   pool.betsCloseAt = event.params.params.betsCloseAt;
-  pool.decisionDate = event.params.params.decisionDate;
+  pool.decisionTime = BigInt.fromI32(0); // Initialize with 0
   pool.chainName = networkName;
   pool.chainId = BigInt.fromI32(chainId as i32);
   pool.isDraw = false;
@@ -223,6 +225,7 @@ export function handleTwitterPostIdSet(event: TwitterPostIdSetEvent): void {
 }
 
 export function handlePayoutClaimed(event: PayoutClaimedEvent): void {
+  // ResolutionCode enum values as strings
   const betId = event.params.betId.toString();
   const poolId = event.params.poolId.toString();
 
@@ -245,6 +248,26 @@ export function handlePayoutClaimed(event: PayoutClaimedEvent): void {
   entity.bet = betId;
   entity.pool = poolId;
 
+  // Set the resolution code from the event parameter
+  const resolutionCodeValue = event.params.resolution;
+  let outcome: string;
+
+  if (resolutionCodeValue == 0) {
+    outcome = "NONE";
+  } else if (resolutionCodeValue == 1) {
+    outcome = "WON";
+  } else if (resolutionCodeValue == 2) {
+    outcome = "LOST";
+  } else if (resolutionCodeValue == 3) {
+    outcome = "VOIDED";
+  } else if (resolutionCodeValue == 4) {
+    outcome = "DRAW";
+  } else {
+    outcome = "NONE";
+  }
+
+  entity.outcome = outcome;
+
   // Update Bet entity
   const bet = Bet.load(betId);
   if (bet == null) {
@@ -254,6 +277,7 @@ export function handlePayoutClaimed(event: PayoutClaimedEvent): void {
   bet.payoutClaimedBlockNumber = event.block.number;
   bet.payoutClaimedBlockTimestamp = event.block.timestamp;
   bet.payoutClaimedTransactionHash = event.transaction.hash;
+  bet.outcome = outcome;
 
   bet.save();
   entity.save();

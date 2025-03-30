@@ -18,13 +18,11 @@ contract CreatePoolScript is Script {
 
         // Pool 1: Updated to be about Claude's capabilities
         uint40 pool1BetsCloseAt = uint40(block.timestamp + 60 * 2);
-        uint40 pool1DecisionDate = uint40(block.timestamp + 24 * 60 * 60);
         uint256 pool1Id = bettingPools.createPool(
             BettingPools.CreatePoolParams({
                 question: "This is just a test question",
                 options: ["Option 1", "Option 2"],
                 betsCloseAt: pool1BetsCloseAt,
-                decisionDate: pool1DecisionDate,
                 imageUrl: "https://res.cloudinary.com/apideck/image/upload/w_196,f_auto/v1689100675/icons/anthropic-claude.png",
                 category: "AI",
                 creatorName: "@crypto_oracle_42",
@@ -33,7 +31,7 @@ contract CreatePoolScript is Script {
                 closureInstructions: "If Claude's next release announcement highlights code generation improvements over mathematical reasoning improvements, then the first option wins. Otherwise, the second option wins."
             })
         );
-        
+
         bettingPools.setTwitterPostId(pool1Id, "1894217309029634136");
 
         console.log("Pool created with ID:", pool1Id);

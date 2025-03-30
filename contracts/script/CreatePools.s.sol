@@ -18,13 +18,11 @@ contract CreatePoolScript is Script {
 
         // Pool 1: Updated to be about Claude's capabilities
         uint40 pool1BetsCloseAt = uint40(block.timestamp + 60 * 60 * 2);
-        uint40 pool1DecisionDate = uint40(block.timestamp + 86400);
         bettingPools.createPool(
             BettingPools.CreatePoolParams({
                 question: "What will be Claude's primary improvement in its next release?",
                 options: ["Code Generation", "Mathematical Reasoning"],
                 betsCloseAt: pool1BetsCloseAt,
-                decisionDate: pool1DecisionDate,
                 imageUrl: "https://res.cloudinary.com/apideck/image/upload/w_196,f_auto/v1689100675/icons/anthropic-claude.png",
                 category: "AI",
                 creatorName: "@crypto_oracle_42",
@@ -38,13 +36,11 @@ contract CreatePoolScript is Script {
 
         // Pool 2: Bitcoin ETF Impact
         uint40 pool2BetsCloseAt = uint40(block.timestamp + 60 * 60 * 2);
-        uint40 pool2DecisionDate = uint40(block.timestamp + 86400); // 24 hours
         bettingPools.createPool(
             BettingPools.CreatePoolParams({
                 question: "Will Bitcoin's price be higher 24 hours after Blackrock's ETF first daily trading volume is reported?",
                 options: ["Yes", "No"],
                 betsCloseAt: pool2BetsCloseAt,
-                decisionDate: pool2DecisionDate,
                 imageUrl: "https://s2.coinmarketcap.com/static/img/coins/200x200/1.png",
                 category: "Crypto",
                 creatorName: "@btc_analyst",
@@ -58,13 +54,11 @@ contract CreatePoolScript is Script {
 
         // Pool 3: Apple Vision Pro Sales
         uint40 pool3BetsCloseAt = uint40(block.timestamp + 60 * 60 * 4);
-        uint40 pool3DecisionDate = uint40(block.timestamp + 2592000); // 30 days
         bettingPools.createPool(
             BettingPools.CreatePoolParams({
                 question: "Will Apple Vision Pro sell over 500,000 units in its first month?",
                 options: ["Over 500k", "Under 500k"],
                 betsCloseAt: pool3BetsCloseAt,
-                decisionDate: pool3DecisionDate,
                 imageUrl: "https://store.storeimages.cdn-apple.com/4982/as-images.apple.com/is/vision-pro-side?wid=96&hei=96&fmt=png-alpha",
                 category: "Technology",
                 creatorName: "@tech_insider",
@@ -78,13 +72,11 @@ contract CreatePoolScript is Script {
 
         // Pool 4: Super Bowl LVIII
         uint40 pool4BetsCloseAt = uint40(block.timestamp + 60 * 60 * 4);
-        uint40 pool4DecisionDate = uint40(block.timestamp + 432000); // 5 days
         bettingPools.createPool(
             BettingPools.CreatePoolParams({
                 question: "Which team will score first in Super Bowl LVIII?",
                 options: ["San Francisco 49ers", "Kansas City Chiefs"],
                 betsCloseAt: pool4BetsCloseAt,
-                decisionDate: pool4DecisionDate,
                 imageUrl: "https://static.www.nfl.com/image/private/t_q-best/league/mywogy71oluagu0qmgaz",
                 category: "Sports",
                 creatorName: "@sports_expert",
@@ -98,13 +90,11 @@ contract CreatePoolScript is Script {
 
         // Pool 5: Tesla Cybertruck Production
         uint40 pool5BetsCloseAt = uint40(block.timestamp + 60 * 60 * 6);
-        uint40 pool5DecisionDate = uint40(block.timestamp + 7776000); // 90 days
         bettingPools.createPool(
             BettingPools.CreatePoolParams({
                 question: "How many Cybertrucks will Tesla deliver in Q1 2024?",
                 options: ["Over 10,000", "Under 10,000"],
                 betsCloseAt: pool5BetsCloseAt,
-                decisionDate: pool5DecisionDate,
                 imageUrl: "https://tesla-cdn.thron.com/delivery/public/image/tesla/8c26f779-11e5-4cfc-bd7c-dcd03b18ff88/bvlatuR/std/4096x2560/Cybertruck-Exterior-Front-Trunk-Desktop",
                 category: "Automotive",
                 creatorName: "@ev_tracker",
@@ -118,13 +108,11 @@ contract CreatePoolScript is Script {
 
         // Pool 6: OpenAI's Next CEO
         uint40 pool6BetsCloseAt = uint40(block.timestamp + 60 * 60 * 6);
-        uint40 pool6DecisionDate = uint40(block.timestamp + 7776000); // 90 days
         bettingPools.createPool(
             BettingPools.CreatePoolParams({
                 question: "Will Sam Altman return as permanent CEO of OpenAI by end of Q2 2024?",
                 options: ["Yes", "No"],
                 betsCloseAt: pool6BetsCloseAt,
-                decisionDate: pool6DecisionDate,
                 imageUrl: "https://upload.wikimedia.org/wikipedia/commons/c/c1/OpenAI_logo.svg",
                 category: "AI",
                 creatorName: "@ai_insider",

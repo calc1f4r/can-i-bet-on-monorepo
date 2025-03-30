@@ -3,6 +3,14 @@ enum PoolStatus {
   GRADED
 }
 
+enum BetOutcome {
+  NONE
+  WON
+  LOST
+  VOIDED
+  DRAW
+}
+
 type Bet @entity {
   id: String!
   betIntId: BigInt! # uint256
@@ -19,27 +27,11 @@ type Bet @entity {
   payoutClaimedBlockNumber: BigInt
   payoutClaimedBlockTimestamp: BigInt
   payoutClaimedTransactionHash: Bytes
+  outcome: BetOutcome!
 
   blockNumber: BigInt!
   blockTimestamp: BigInt!
   transactionHash: Bytes!
-
-  chainName: String!
-  chainId: BigInt!
-}
-
-type BetCancelled @entity(immutable: true) {
-  id: String!
-  betId: BigInt! # uint256
-  poolId: BigInt! # uint256
-  user: Bytes! # address
-  optionIndex: BigInt! # uint256
-  amount: BigInt! # uint256
-  blockNumber: BigInt!
-  blockTimestamp: BigInt!
-  transactionHash: Bytes!
-  betPlaced: BetPlaced!
-  poolCreated: PoolCreated!
 
   chainName: String!
   chainId: BigInt!
@@ -78,7 +70,7 @@ type Pool @entity {
   closureCriteria: String!
   closureInstructions: String!
   betsCloseAt: BigInt! # uint40
-  decisionDate: BigInt! # uint40
+  decisionTime: BigInt! # uint40
   isDraw: Boolean!
   chainName: String!
   chainId: BigInt!
@@ -114,7 +106,7 @@ type PoolCreated @entity(immutable: true) {
   question: String! # string
   options: [String!]! # string[2]
   betsCloseAt: BigInt! # uint40
-  decisionDate: BigInt! # uint40
+  decisionTime: BigInt! # uint40
   imageUrl: String!
   category: String!
   creatorName: String!
@@ -141,6 +133,7 @@ type PayoutClaimed @entity(immutable: true) {
   poolId: BigInt! # uint256
   user: Bytes! # address
   amount: BigInt! # uint256
+  outcome: BetOutcome!
   blockNumber: BigInt!
   blockTimestamp: BigInt!
   transactionHash: Bytes!

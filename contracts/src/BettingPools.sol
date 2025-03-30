@@ -15,6 +15,13 @@ contract BettingPools is Ownable {
         REGRADED //Disputed (unused for now)
 
     }
+    enum BetOutcome {
+        NONE,
+        WON,
+        LOST,
+        VOIDED,
+        DRAW
+    }
 
     // Structs
     struct Pool {
@@ -22,7 +29,7 @@ contract BettingPools is Ownable {
         string question; // Bet question
         string[2] options; // Bet options
         uint40 betsCloseAt; // Time at which no more bets can be placed
-        uint40 decisionDate; // UNUSED
+        uint40 decisionTime; // Time in which we knew the outcome of the bet. If this happens while bets are open, bets made on or after this time are void and refunded
         uint256[2] betTotals; // Total amount of money bet on each option
         uint256[] betIds; // Array of ids for user bets
         mapping(address => Bet[2]) betsByUser; // Mapping from user address to their bets. Bets for option
@@ -54,13 +61,13 @@ contract BettingPools is Ownable {
         uint256 createdAt; // Time at which the bet was initially created
         uint256 updatedAt; // Time which bet was updated (ie: if a user added more money to their bet)
         bool isPayedOut; // Whether the bet has been paid out by Chainlink Automation
+        BetOutcome outcome; // How the bet was resolved (NONE, WON, LOST, VOIDED, DRAW)
     }
 
     struct CreatePoolParams {
         string question;
         string[2] options;
         uint40 betsCloseAt;
-        uint40 decisionDate;
         string imageUrl;
         string category;
         string creatorName;
@@ -75,7 +82,7 @@ contract BettingPools is Ownable {
     uint256 public constant PAYOUT_FEE_BP = 90; // 0.9% fee for the payout
 
     // State
-    ERC20Permit usdc;
+    ERC20Permit public usdc;
 
     uint256 public nextPoolId = 1;
     uint256 public nextBetId = 1;
@@ -84,7 +91,6 @@ contract BettingPools is Ownable {
 
     mapping(uint256 betId => Bet bet) public bets;
     mapping(address bettor => uint256[] betIds) public userBets;
-
 
     // Custom Errors
     error BetsCloseTimeInPast();
@@ -109,12 +115,14 @@ contract BettingPools is Ownable {
 
     // Events
     event PoolCreated(uint256 poolId, CreatePoolParams params);
-    event PoolClosed(uint256 indexed poolId, uint256 selectedOption);
+    event PoolClosed(uint256 indexed poolId, uint256 selectedOption, uint40 decisionTime);
     event BetPlaced(
         uint256 indexed betId, uint256 indexed poolId, address indexed user, uint256 optionIndex, uint256 amount
     );
     event TwitterPostIdSet(uint256 indexed poolId, string twitterPostId);
-    event PayoutClaimed(uint256 indexed betId, uint256 indexed poolId, address indexed user, uint256 amount);
+    event PayoutClaimed(
+        uint256 indexed betId, uint256 indexed poolId, address indexed user, uint256 amount, BetOutcome resolution
+    );
 
     constructor(address _usdc) Ownable(msg.sender) {
         usdc = ERC20Permit(_usdc);
@@ -122,7 +130,6 @@ contract BettingPools is Ownable {
 
     function createPool(CreatePoolParams calldata params) external onlyOwner returns (uint256 poolId) {
         if (params.betsCloseAt <= block.timestamp) revert BetsCloseTimeInPast();
-        if (params.betsCloseAt > params.decisionDate) revert BetsCloseAfterDecision();
 
         poolId = nextPoolId++;
 
@@ -131,7 +138,7 @@ contract BettingPools is Ownable {
         pool.question = params.question;
         pool.options = params.options;
         pool.betsCloseAt = params.betsCloseAt;
-        pool.decisionDate = params.decisionDate;
+        pool.decisionTime = 0; // Initially set to 0, will be set when pool is graded
         pool.betTotals = [0, 0];
         pool.betIds = new uint256[](0);
         pool.winningOption = 0;
@@ -185,7 +192,8 @@ contract BettingPools is Ownable {
                 poolId: poolId,
                 createdAt: block.timestamp,
                 updatedAt: block.timestamp,
-                isPayedOut: false
+                isPayedOut: false,
+                outcome: BetOutcome.NONE
             });
             bets[betId] = newBet;
             pools[poolId].betIds.push(betId);
@@ -199,13 +207,14 @@ contract BettingPools is Ownable {
         emit BetPlaced(betId, poolId, bettor, optionIndex, amount);
     }
 
-    function gradeBet(uint256 poolId, uint256 responseOption) external onlyOwner {
+    function gradeBet(uint256 poolId, uint256 responseOption, uint40 decisionTime) external onlyOwner {
         Pool storage pool = pools[poolId];
 
         if (pool.status != PoolStatus.PENDING) revert PoolNotOpen();
-        if (block.timestamp < pool.betsCloseAt) revert BettingPeriodNotClosed();
+        // if (block.timestamp < pool.betsCloseAt ) revert BettingPeriodNotClosed();
 
         pool.status = PoolStatus.GRADED;
+        pool.decisionTime = decisionTime;
 
         if (responseOption == 0) {
             pool.winningOption = 0;
@@ -217,7 +226,7 @@ contract BettingPools is Ownable {
             revert("Bet cannot be graded");
         }
 
-        emit PoolClosed(poolId, responseOption);
+        emit PoolClosed(poolId, responseOption, decisionTime);
     }
 
     function claimPayouts(uint256[] calldata betIds) external {
@@ -229,22 +238,38 @@ contract BettingPools is Ownable {
             bets[betId].isPayedOut = true;
             uint256 poolId = bets[betId].poolId;
 
+            // Check if bet was placed after or on decisionTime and should be voided
+            if (pools[poolId].decisionTime > 0 && bets[betId].createdAt >= pools[poolId].decisionTime) {
+                bets[betId].outcome = BetOutcome.VOIDED;
+                usdc.transfer(bets[betId].owner, bets[betId].amount);
+                emit PayoutClaimed(betId, poolId, bets[betId].owner, bets[betId].amount, BetOutcome.VOIDED);
+                continue;
+            }
+
             // If it is a draw or there are no bets on one side or the other, refund the bet
             if (pools[poolId].isDraw || pools[poolId].betTotals[0] == 0 || pools[poolId].betTotals[1] == 0) {
+                BetOutcome resolution = pools[poolId].isDraw ? BetOutcome.DRAW : BetOutcome.VOIDED;
+
+                bets[betId].outcome = resolution;
                 usdc.transfer(bets[betId].owner, bets[betId].amount);
+                emit PayoutClaimed(betId, poolId, bets[betId].owner, bets[betId].amount, resolution);
                 continue;
             }
 
             uint256 losingOption = pools[poolId].winningOption == 0 ? 1 : 0;
 
             if (bets[betId].option == pools[poolId].winningOption) {
+                bets[betId].outcome = BetOutcome.WON;
                 uint256 winAmount = (bets[betId].amount * pools[poolId].betTotals[losingOption])
                     / pools[poolId].betTotals[pools[poolId].winningOption] + bets[betId].amount;
                 uint256 fee = (winAmount * PAYOUT_FEE_BP) / 10000;
                 uint256 payout = winAmount - fee;
                 usdc.transfer(bets[betId].owner, payout);
                 usdc.transfer(owner(), fee);
-                emit PayoutClaimed(betId, poolId, bets[betId].owner, payout);
+                emit PayoutClaimed(betId, poolId, bets[betId].owner, payout, BetOutcome.WON);
+            } else {
+                bets[betId].outcome = BetOutcome.LOST;
+                emit PayoutClaimed(betId, poolId, bets[betId].owner, 0, BetOutcome.LOST);
             }
         }
     }
