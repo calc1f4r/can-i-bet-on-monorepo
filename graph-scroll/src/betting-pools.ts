@@ -32,6 +32,7 @@ const chainIdToNetworkName = (networkName: string): i32 => {
 };
 
 export function handleBetPlaced(event: BetPlacedEvent): void {
+  console.log("handleBetPlaced");
   // dataSource.network()
   const betId = event.params.betId.toString();
   const poolId = event.params.poolId.toString();
@@ -45,6 +46,7 @@ export function handleBetPlaced(event: BetPlacedEvent): void {
   entity.user = event.params.user;
   entity.optionIndex = event.params.optionIndex;
   entity.amount = event.params.amount;
+  entity.tokenType = event.params.tokenType ? "POINTS" : "USDC";
   entity.blockNumber = event.block.number;
   entity.blockTimestamp = event.block.timestamp;
   entity.transactionHash = event.transaction.hash;
@@ -66,6 +68,7 @@ export function handleBetPlaced(event: BetPlacedEvent): void {
   bet.user = event.params.user;
   bet.optionIndex = event.params.optionIndex;
   bet.amount = event.params.amount;
+  bet.tokenType = event.params.tokenType == 1 ? "POINTS" : "USDC";
   bet.createdAt = event.block.timestamp;
   bet.updatedAt = event.block.timestamp;
   bet.blockNumber = event.block.number;
@@ -85,12 +88,29 @@ export function handleBetPlaced(event: BetPlacedEvent): void {
   if (pool == null) {
     throw new Error("Pool not found");
   }
-  pool.totalBets = pool.totalBets.plus(event.params.amount);
+
   const optionTotals = pool.totalBetsByOption;
   optionTotals[event.params.optionIndex.toI32()] = optionTotals[
     event.params.optionIndex.toI32()
   ].plus(event.params.amount);
   pool.totalBetsByOption = optionTotals;
+
+  // Update the appropriate bet totals based on tokenType
+  if (event.params.tokenType == 0) {
+    // USDC
+    const usdcTotals = pool.usdcBetTotals;
+    usdcTotals[event.params.optionIndex.toI32()] = usdcTotals[
+      event.params.optionIndex.toI32()
+    ].plus(event.params.amount);
+    pool.usdcBetTotals = usdcTotals;
+  } else {
+    // POINTS
+    const pointsTotals = pool.pointsBetTotals;
+    pointsTotals[event.params.optionIndex.toI32()] = pointsTotals[
+      event.params.optionIndex.toI32()
+    ].plus(event.params.amount);
+    pool.pointsBetTotals = pointsTotals;
+  }
 
   // Update lastUpdated timestamps
   pool.lastUpdatedBlockNumber = event.block.number;
@@ -166,8 +186,9 @@ export function handlePoolCreated(event: PoolCreatedEvent): void {
   pool.poolIntId = event.params.poolId;
   pool.question = event.params.params.question;
   pool.options = event.params.params.options;
-  pool.totalBets = BigInt.fromI32(0);
   pool.totalBetsByOption = [BigInt.fromI32(0), BigInt.fromI32(0)];
+  pool.usdcBetTotals = [BigInt.fromI32(0), BigInt.fromI32(0)];
+  pool.pointsBetTotals = [BigInt.fromI32(0), BigInt.fromI32(0)];
   pool.selectedOption = BigInt.fromI32(0);
   pool.status = "PENDING";
   pool.imageUrl = event.params.params.imageUrl;
@@ -240,6 +261,7 @@ export function handlePayoutClaimed(event: PayoutClaimedEvent): void {
   entity.poolId = event.params.poolId;
   entity.user = event.params.user;
   entity.amount = event.params.amount;
+  entity.tokenType = event.params.tokenType ? "POINTS" : "USDC";
   entity.blockNumber = event.block.number;
   entity.blockTimestamp = event.block.timestamp;
   entity.transactionHash = event.transaction.hash;

@@ -19,7 +19,8 @@ export const GET_POOLS = gql(`
         poolIntId
         question
         options
-        totalBets
+        usdcBetTotals
+        pointsBetTotals
         totalBetsByOption
         selectedOption
         status
@@ -32,7 +33,7 @@ export const GET_POOLS = gql(`
         closureCriteria
         closureInstructions
         betsCloseAt
-        decisionDate
+        decisionTime
         chainId
         chainName
         isDraw
@@ -60,7 +61,8 @@ export const GET_POOLS_SUBSCRIPTION = gql(`
         poolIntId
         question
         options
-        totalBets
+        usdcBetTotals
+        pointsBetTotals
         totalBetsByOption
         selectedOption
         status
@@ -73,7 +75,7 @@ export const GET_POOLS_SUBSCRIPTION = gql(`
         closureCriteria
         closureInstructions
         betsCloseAt
-        decisionDate
+        decisionTime
         chainId
         chainName
         isDraw
@@ -118,11 +120,12 @@ export const GET_BETS = gql(`
       poolIntId
       question
       options
-      totalBets
+      usdcBetTotals
+      pointsBetTotals
       totalBetsByOption
       selectedOption
       status
-      decisionDate
+      decisionTime
       betsCloseAt
       creatorId
       creatorName
@@ -157,11 +160,12 @@ subscription GetBetsSubscription(
       poolIntId
       question
       options
-      totalBets
+      usdcBetTotals
+      pointsBetTotals
       totalBetsByOption
       selectedOption
       status
-      decisionDate
+      decisionTime
       betsCloseAt
       creatorId
       creatorName
@@ -186,7 +190,8 @@ export const GET_POOL = gql(`
       question
       options
       betsCloseAt
-      totalBets
+      usdcBetTotals
+      pointsBetTotals
       totalBetsByOption
       selectedOption
       status
@@ -209,7 +214,8 @@ export const GET_POOL_SUBSCRIPTION = gql(`
       question
       options
       betsCloseAt
-      totalBets
+      usdcBetTotals
+      pointsBetTotals
       totalBetsByOption
       selectedOption
       status

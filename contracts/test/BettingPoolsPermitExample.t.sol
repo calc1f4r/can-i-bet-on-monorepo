@@ -3,7 +3,7 @@ pragma solidity ^0.8.24;
 
 import "../lib/forge-std/src/Test.sol";
 import "../src/BettingPools.sol";
-import "../src/USDP.sol";
+import "../src/BetPoints.sol";
 import "./helpers/PermitTestHelper.sol";
 
 /**
@@ -14,7 +14,7 @@ import "./helpers/PermitTestHelper.sol";
  */
 contract BettingPoolsPermitExampleTest is Test {
     BettingPools public bettingPools;
-    USDP public usdc;
+    BetPoints public betPoints;
 
     address public owner;
     address public bettor;
@@ -32,14 +32,14 @@ contract BettingPoolsPermitExampleTest is Test {
 
         // Setup contracts
         vm.startPrank(owner);
-        usdc = new USDP("USD Proxy", "USDP", 6);
-        bettingPools = new BettingPools(address(usdc));
+        betPoints = new BetPoints("Bet Points", "BPT", 6);
+        bettingPools = new BettingPools(address(0), address(betPoints));
         vm.stopPrank();
 
-        // Mint USDC to bettor
-        uint256 initialBalance = 1000 * 10 ** 6; // 1000 USDC
+        // Mint BetPoints to bettor
+        uint256 initialBalance = 1000 * 10 ** 6; // 1000 BetPoints
         vm.startPrank(owner);
-        usdc.mint(bettor, initialBalance);
+        betPoints.mint(bettor, initialBalance);
         vm.stopPrank();
 
         // Create a pool
@@ -65,17 +65,18 @@ contract BettingPoolsPermitExampleTest is Test {
     function testPlaceBetWithPermit() public {
         // Define bet parameters
         uint256 optionIndex = 0; // "Yes" option
-        uint256 amount = 100 * 10 ** 6; // 100 USDC
+        uint256 amount = 100 * 10 ** 6; // 100 BetPoints
         uint256 deadline = block.timestamp + 1 hours;
 
         // Generate the permit signature
         BettingPools.Signature memory sig = PermitTestHelper.createPermitSignature(
-            vm, usdc, bettor, address(bettingPools), amount, deadline, bettorPrivateKey
+            vm, betPoints, bettor, address(bettingPools), amount, deadline, bettorPrivateKey
         );
 
         // Place the bet using the original placeBet function with the permit
         vm.prank(bettor);
-        uint256 betId = bettingPools.placeBet(poolId, optionIndex, amount, bettor, deadline, sig);
+        uint256 betId =
+            bettingPools.placeBet(poolId, optionIndex, amount, bettor, BettingPools.TokenType.POINTS, deadline, sig);
 
         // Verify that the bet was created successfully
         assertTrue(betId > 0, "Bet ID should be non-zero");
@@ -83,26 +84,28 @@ contract BettingPoolsPermitExampleTest is Test {
         // Verify the bet details
         (
             uint256 id,
-            address owner,
+            address betOwner,
             uint256 option,
             uint256 betAmount,
             uint256 betPoolId,
-            ,
-            , // createdAt, updatedAt
+            uint256 createdAt,
+            uint256 updatedAt,
             bool isPayedOut,
-            BettingPools.BetOutcome payoutResolution
+            BettingPools.BetOutcome outcome,
+            BettingPools.TokenType tokenType
         ) = bettingPools.bets(betId);
 
         assertEq(id, betId, "Bet ID should match");
-        assertEq(owner, bettor, "Bet owner should be the bettor");
+        assertEq(betOwner, bettor, "Bet owner should be the bettor");
         assertEq(option, optionIndex, "Option should match");
         assertEq(betAmount, amount, "Bet amount should match");
         assertEq(betPoolId, poolId, "Pool ID should match");
         assertFalse(isPayedOut, "Bet should not be paid out initially");
-        assertEq(uint256(payoutResolution), uint256(BettingPools.BetOutcome.NONE), "Payout resolution should be NONE");
+        assertEq(uint256(outcome), uint256(BettingPools.BetOutcome.NONE), "Payout resolution should be NONE");
+        assertEq(uint256(tokenType), uint256(BettingPools.TokenType.POINTS), "Token type should be POINTS");
 
-        // Check that USDC was transferred from the bettor to the contract
-        assertEq(usdc.balanceOf(bettor), 900 * 10 ** 6, "Bettor should have 900 USDC left");
-        assertEq(usdc.balanceOf(address(bettingPools)), 100 * 10 ** 6, "Contract should have 100 USDC");
+        // Check that BetPoints was transferred from the bettor to the contract
+        assertEq(betPoints.balanceOf(bettor), 900 * 10 ** 6, "Bettor should have 900 BetPoints left");
+        assertEq(betPoints.balanceOf(address(bettingPools)), 100 * 10 ** 6, "Contract should have 100 BetPoints");
     }
 }

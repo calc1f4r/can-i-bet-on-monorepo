@@ -7,8 +7,8 @@ import "../src/BettingPools.sol";
 contract GradeBetScript is Script {
     function run() external {
         // Input the poolId to send the grading request for
-        uint256 poolId = 18;
-        uint256 responseOption = 1; //Option A
+        uint256 poolId = 3;
+        uint256 responseOption = 0; //Option A
         uint40 decisionTime = uint40(block.timestamp - 1 hours); // Setting decision time to 1 hour ago
 
         // Get deployer's private key from environment

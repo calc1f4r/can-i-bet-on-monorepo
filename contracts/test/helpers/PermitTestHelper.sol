@@ -81,13 +81,41 @@ library PermitTestHelper {
      * @dev Useful for tests to reduce boilerplate code when placing bets
      * @param vm The Foundry VM instance
      * @param bettingPools The BettingPools contract instance
-     * @param token The USDC token contract (must be ERC20Permit)
+     * @param token The ERC20Permit token contract
      * @param bettor The address placing the bet
      * @param privateKey The private key of the bettor for signing
      * @param poolId The pool ID to bet on
      * @param option The option index to bet on (0 or 1)
      * @param amount The amount to bet
+     * @param tokenType Optional parameter to specify token type, defaults to POINTS
      * @return betId The ID of the created bet
+     */
+    function placeBetWithPermit(
+        Vm vm,
+        BettingPools bettingPools,
+        ERC20Permit token,
+        address bettor,
+        uint256 privateKey,
+        uint256 poolId,
+        uint256 option,
+        uint256 amount,
+        BettingPools.TokenType tokenType
+    ) internal returns (uint256 betId) {
+        uint256 deadline = block.timestamp + 1 hours;
+
+        // Generate permit signature
+        BettingPools.Signature memory sig =
+            createPermitSignature(vm, token, bettor, address(bettingPools), amount, deadline, privateKey);
+
+        // Place bet with permit
+        vm.prank(bettor);
+        betId = bettingPools.placeBet(poolId, option, amount, bettor, tokenType, deadline, sig);
+
+        return betId;
+    }
+
+    /**
+     * @notice Overloaded helper function that defaults to TokenType.POINTS
      */
     function placeBetWithPermit(
         Vm vm,
@@ -99,16 +127,8 @@ library PermitTestHelper {
         uint256 option,
         uint256 amount
     ) internal returns (uint256 betId) {
-        uint256 deadline = block.timestamp + 1 hours;
-
-        // Generate permit signature
-        BettingPools.Signature memory sig =
-            createPermitSignature(vm, token, bettor, address(bettingPools), amount, deadline, privateKey);
-
-        // Place bet with permit
-        vm.prank(bettor);
-        betId = bettingPools.placeBet(poolId, option, amount, bettor, deadline, sig);
-
-        return betId;
+        return placeBetWithPermit(
+            vm, bettingPools, token, bettor, privateKey, poolId, option, amount, BettingPools.TokenType.POINTS
+        );
     }
 }

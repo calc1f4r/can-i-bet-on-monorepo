@@ -4,7 +4,7 @@ import {ERC20Permit} from "../lib/openzeppelin-contracts/contracts/token/ERC20/e
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.13;
 
-contract USDP is ERC20, ERC20Permit {
+contract BetPoints is ERC20, ERC20Permit {
     uint8 private immutable _decimals;
     bytes32 public constant PERMIT_TYPEHASH = keccak256(
         "Permit(address owner,address spender,uint256 value,uint256 nonce,uint256 deadline)"

@@ -6,11 +6,11 @@ schema:
 dataSources:
   - kind: ethereum
     name: BettingPools
-    network: scroll-sepolia
+    network: base-sepolia
     source:
-      address: "0xd7deeD1a65317951c3c954233Abe85483a0d2913"
+      address: "0xeb6AF2A4d7591C81A10114E8EB2b9b45f1bee60D"
       abi: BettingPools
-      startBlock: 8765314
+      startBlock: 23837849
     mapping:
       kind: ethereum/events
       apiVersion: 0.0.9
@@ -27,7 +27,7 @@ dataSources:
         - name: BettingPools
           file: ../contracts/out/BettingPools.sol/BettingPools.json
       eventHandlers:
-        - event: BetPlaced(indexed uint256,indexed uint256,indexed address,uint256,uint256)
+        - event: BetPlaced(indexed uint256,indexed uint256,indexed address,uint256,uint256,uint8)
           handler: handleBetPlaced
         - event: PoolCreated(uint256,(string,string[2],uint40,string,string,string,string,string,string))
           handler: handlePoolCreated
@@ -35,6 +35,6 @@ dataSources:
           handler: handlePoolClosed
         - event: TwitterPostIdSet(indexed uint256,string)
           handler: handleTwitterPostIdSet
-        - event: PayoutClaimed(indexed uint256,indexed uint256,indexed address,uint256,uint8)
+        - event: PayoutClaimed(indexed uint256,indexed uint256,indexed address,uint256,uint8,uint8)
           handler: handlePayoutClaimed
       file: ./src/betting-pools.ts

@@ -12,12 +12,12 @@ pragma solidity ^0.8.24;
  */
 import "../lib/forge-std/src/Test.sol";
 import "../src/BettingPools.sol";
-import "../src/USDP.sol";
+import "../src/BetPoints.sol";
 import "./helpers/PermitTestHelper.sol";
 
 contract BettingPoolsDecisionTimeWithPermitsTest is Test {
     BettingPools public bettingPools;
-    USDP public usdc;
+    BetPoints public betPoints;
 
     address public owner;
 
@@ -48,12 +48,12 @@ contract BettingPoolsDecisionTimeWithPermitsTest is Test {
 
         // Setup contracts
         vm.startPrank(owner);
-        usdc = new USDP("USD Proxy", "USDP", 6);
-        bettingPools = new BettingPools(address(usdc));
+        betPoints = new BetPoints("Bet Points", "BPT", 6);
+        bettingPools = new BettingPools(address(0), address(betPoints));
         vm.stopPrank();
 
-        // Mint USDC to bettors
-        uint256 initialBalance = 1000 * 10 ** 6; // 1000 USDC
+        // Mint BetPoints to bettors
+        uint256 initialBalance = 1000 * 10 ** 6; // 1000 BetPoints
         address[] memory bettors = new address[](3);
         bettors[0] = bettor1;
         bettors[1] = bettor2;
@@ -61,7 +61,7 @@ contract BettingPoolsDecisionTimeWithPermitsTest is Test {
 
         for (uint256 i = 0; i < bettors.length; i++) {
             vm.startPrank(owner);
-            usdc.mint(bettors[i], initialBalance);
+            betPoints.mint(bettors[i], initialBalance);
             vm.stopPrank();
         }
 
@@ -90,7 +90,7 @@ contract BettingPoolsDecisionTimeWithPermitsTest is Test {
         uint256 betId1 = PermitTestHelper.placeBetWithPermit(
             vm,
             bettingPools,
-            usdc,
+            betPoints,
             bettor1,
             bettor1Key,
             poolId,
@@ -106,7 +106,7 @@ contract BettingPoolsDecisionTimeWithPermitsTest is Test {
         uint256 betId2 = PermitTestHelper.placeBetWithPermit(
             vm,
             bettingPools,
-            usdc,
+            betPoints,
             bettor2,
             bettor2Key,
             poolId,
@@ -117,7 +117,7 @@ contract BettingPoolsDecisionTimeWithPermitsTest is Test {
         uint256 betId3 = PermitTestHelper.placeBetWithPermit(
             vm,
             bettingPools,
-            usdc,
+            betPoints,
             bettor3,
             bettor3Key,
             poolId,
@@ -141,9 +141,9 @@ contract BettingPoolsDecisionTimeWithPermitsTest is Test {
         console.log("BetOutcome.DRAW =", uint256(BettingPools.BetOutcome.DRAW));
 
         // Get initial balances before payout
-        uint256 initialBettor1Balance = usdc.balanceOf(bettor1);
-        uint256 initialBettor2Balance = usdc.balanceOf(bettor2);
-        uint256 initialBettor3Balance = usdc.balanceOf(bettor3);
+        uint256 initialBettor1Balance = betPoints.balanceOf(bettor1);
+        uint256 initialBettor2Balance = betPoints.balanceOf(bettor2);
+        uint256 initialBettor3Balance = betPoints.balanceOf(bettor3);
 
         // Claim payouts
         uint256[] memory betIds = new uint256[](3);
@@ -179,9 +179,9 @@ contract BettingPoolsDecisionTimeWithPermitsTest is Test {
         assertEq(uint256(bet3.outcome), uint256(BettingPools.BetOutcome.VOIDED));
 
         // Verify refunds were issued for voided bets
-        assertEq(usdc.balanceOf(bettor1), initialBettor1Balance + bet1.amount);
-        assertEq(usdc.balanceOf(bettor2), initialBettor2Balance + bet2.amount);
-        assertEq(usdc.balanceOf(bettor3), initialBettor3Balance + bet3.amount);
+        assertEq(betPoints.balanceOf(bettor1), initialBettor1Balance + bet1.amount);
+        assertEq(betPoints.balanceOf(bettor2), initialBettor2Balance + bet2.amount);
+        assertEq(betPoints.balanceOf(bettor3), initialBettor3Balance + bet3.amount);
     }
 
     function testVoidBetsConsistentlyAcrossMultiplePayoutCalls() public {
@@ -191,7 +191,7 @@ contract BettingPoolsDecisionTimeWithPermitsTest is Test {
         uint256 betId1 = PermitTestHelper.placeBetWithPermit(
             vm,
             bettingPools,
-            usdc,
+            betPoints,
             bettor1,
             bettor1Key,
             poolId,
@@ -202,7 +202,7 @@ contract BettingPoolsDecisionTimeWithPermitsTest is Test {
         uint256 betId2 = PermitTestHelper.placeBetWithPermit(
             vm,
             bettingPools,
-            usdc,
+            betPoints,
             bettor3,
             bettor3Key,
             poolId,
@@ -211,10 +211,10 @@ contract BettingPoolsDecisionTimeWithPermitsTest is Test {
         );
 
         // Print balances
-        console.log("bettor1 initial balance:", usdc.balanceOf(bettor1));
-        console.log("bettor2 initial balance:", usdc.balanceOf(bettor2));
-        console.log("bettor3 initial balance:", usdc.balanceOf(bettor3));
-        console.log("contract balance:", usdc.balanceOf(address(bettingPools)));
+        console.log("bettor1 initial balance:", betPoints.balanceOf(bettor1));
+        console.log("bettor2 initial balance:", betPoints.balanceOf(bettor2));
+        console.log("bettor3 initial balance:", betPoints.balanceOf(bettor3));
+        console.log("contract balance:", betPoints.balanceOf(address(bettingPools)));
 
         // Decision time is after the first bets
         uint40 decisionTime = uint40(block.timestamp + 1);
@@ -224,7 +224,7 @@ contract BettingPoolsDecisionTimeWithPermitsTest is Test {
         uint256 betId3 = PermitTestHelper.placeBetWithPermit(
             vm,
             bettingPools,
-            usdc,
+            betPoints,
             bettor2,
             bettor2Key,
             poolId,
@@ -233,10 +233,10 @@ contract BettingPoolsDecisionTimeWithPermitsTest is Test {
         );
 
         // Log the balance of bettor2 after placing the bet
-        console.log("bettor2 balance after placing bet:", usdc.balanceOf(bettor2));
+        console.log("bettor2 balance after placing bet:", betPoints.balanceOf(bettor2));
 
         // Record final contract balance
-        console.log("contract balance after all bets:", usdc.balanceOf(address(bettingPools)));
+        console.log("contract balance after all bets:", betPoints.balanceOf(address(bettingPools)));
 
         // Warp to after betsCloseAt
         vm.warp(betsCloseAt + 1);
@@ -245,26 +245,26 @@ contract BettingPoolsDecisionTimeWithPermitsTest is Test {
         vm.startPrank(owner);
         bettingPools.gradeBet(poolId, 0, decisionTime);
 
-        // Add extra USDC to the contract to ensure it can process all payouts
+        // Add extra BetPoints to the contract to ensure it can process all payouts
         // This simulates other revenue sources or funds the contract might have
-        usdc.mint(address(bettingPools), 500 * 10 ** 6);
+        betPoints.mint(address(bettingPools), 500 * 10 ** 6);
         vm.stopPrank();
 
-        console.log("contract balance after minting:", usdc.balanceOf(address(bettingPools)));
+        console.log("contract balance after minting:", betPoints.balanceOf(address(bettingPools)));
 
         // First, claim payout for bettor1 only (won)
         uint256[] memory betIds1 = new uint256[](1);
         betIds1[0] = betId1; // bettor1
 
         // Get initial balance for bettor1
-        uint256 initialBettor1Balance = usdc.balanceOf(bettor1);
+        uint256 initialBettor1Balance = betPoints.balanceOf(bettor1);
 
         vm.startPrank(owner);
         bettingPools.claimPayouts(betIds1);
         vm.stopPrank();
 
         // Check if bettor1's balance changed after claim (should win)
-        uint256 bettor1FinalBalance = usdc.balanceOf(bettor1);
+        uint256 bettor1FinalBalance = betPoints.balanceOf(bettor1);
         console.log("bettor1 balance after first claim:", bettor1FinalBalance);
 
         // Get bet1 to determine if it won or was voided
@@ -282,8 +282,8 @@ contract BettingPoolsDecisionTimeWithPermitsTest is Test {
         betIds2[1] = betId2; // bettor3's bet (ID 2)
 
         // Get balances before second claim
-        uint256 initialBettor2Balance = usdc.balanceOf(bettor2);
-        uint256 initialBettor3Balance = usdc.balanceOf(bettor3);
+        uint256 initialBettor2Balance = betPoints.balanceOf(bettor2);
+        uint256 initialBettor3Balance = betPoints.balanceOf(bettor3);
 
         console.log("bettor2 balance before second claim:", initialBettor2Balance);
         console.log("bettor3 balance before second claim:", initialBettor3Balance);
@@ -293,14 +293,14 @@ contract BettingPoolsDecisionTimeWithPermitsTest is Test {
         vm.stopPrank();
 
         // Get final balances
-        uint256 finalBettor2Balance = usdc.balanceOf(bettor2);
-        uint256 finalBettor3Balance = usdc.balanceOf(bettor3);
+        uint256 finalBettor2Balance = betPoints.balanceOf(bettor2);
+        uint256 finalBettor3Balance = betPoints.balanceOf(bettor3);
 
         console.log("bettor2 balance after second claim:", finalBettor2Balance);
         console.log("bettor3 balance after second claim:", finalBettor3Balance);
 
         // Log final contract balance
-        console.log("contract balance after all claims:", usdc.balanceOf(address(bettingPools)));
+        console.log("contract balance after all claims:", betPoints.balanceOf(address(bettingPools)));
 
         // Get bet struct directly for inspection
         BettingPools.Bet memory bet2 = getBet(betId2); // bettor3's bet
@@ -342,7 +342,8 @@ contract BettingPoolsDecisionTimeWithPermitsTest is Test {
             uint256 createdAt,
             uint256 updatedAt,
             bool isPayedOut,
-            BettingPools.BetOutcome outcome
+            BettingPools.BetOutcome outcome,
+            BettingPools.TokenType tokenType
         ) = bettingPools.bets(betId);
 
         return BettingPools.Bet({
@@ -354,7 +355,8 @@ contract BettingPoolsDecisionTimeWithPermitsTest is Test {
             createdAt: createdAt,
             updatedAt: updatedAt,
             isPayedOut: isPayedOut,
-            outcome: outcome
+            outcome: outcome,
+            tokenType: tokenType
         });
     }
 }

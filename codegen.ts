@@ -2,8 +2,7 @@ import type { CodegenConfig } from "@graphql-codegen/cli";
 
 const config: CodegenConfig = {
   overwrite: true,
-  schema:
-    "https://subgraph.satsuma-prod.com/53c89bfbc8b7/as-team--945605/promptbet-subgraph/api",
+  schema: "http://localhost:8000/subgraphs/name/betting-pools",
   documents: [
     "app/**/*.ts(x)",
     "lib/**/*.ts(x)",

@@ -15,12 +15,18 @@ contract BettingPools is Ownable {
         REGRADED //Disputed (unused for now)
 
     }
+
     enum BetOutcome {
         NONE,
         WON,
         LOST,
         VOIDED,
         DRAW
+    }
+
+    enum TokenType {
+        USDC,
+        POINTS
     }
 
     // Structs
@@ -30,7 +36,8 @@ contract BettingPools is Ownable {
         string[2] options; // Bet options
         uint40 betsCloseAt; // Time at which no more bets can be placed
         uint40 decisionTime; // Time in which we knew the outcome of the bet. If this happens while bets are open, bets made on or after this time are void and refunded
-        uint256[2] betTotals; // Total amount of money bet on each option
+        uint256[2] usdcBetTotals; // Total amount bet on each option for USDC [optionIndex]. Must align with options array
+        uint256[2] pointsBetTotals; // Total amount bet on each option for POINTS [optionIndex]. Must align with options array
         uint256[] betIds; // Array of ids for user bets
         mapping(address => Bet[2]) betsByUser; // Mapping from user address to their bets. Bets for option
         uint256 winningOption; // Option that won the bet (0 or 1) (only matters if status is GRADED)
@@ -56,12 +63,13 @@ contract BettingPools is Ownable {
         uint256 id; // Incremental id
         address owner; // Address of user who made the bet
         uint256 option; // Option that the user bet on (0 or 1)
-        uint256 amount; // Amount of USDC bet
+        uint256 amount; // Amount bet
         uint256 poolId; // Id of the pool the bet belongs to
         uint256 createdAt; // Time at which the bet was initially created
         uint256 updatedAt; // Time which bet was updated (ie: if a user added more money to their bet)
         bool isPayedOut; // Whether the bet has been paid out by Chainlink Automation
         BetOutcome outcome; // How the bet was resolved (NONE, WON, LOST, VOIDED, DRAW)
+        TokenType tokenType; // Type of token used for the bet
     }
 
     struct CreatePoolParams {
@@ -77,12 +85,13 @@ contract BettingPools is Ownable {
     }
 
     bytes32 public constant BET_TYPEHASH =
-        keccak256("Bet(uint256 poolId,uint256 optionIndex,uint256 amount,address bettor)");
+        keccak256("Bet(uint256 poolId,uint256 optionIndex,uint256 amount,address bettor,uint8 tokenType)");
 
     uint256 public constant PAYOUT_FEE_BP = 90; // 0.9% fee for the payout
 
     // State
     ERC20Permit public usdc;
+    ERC20Permit public betPoints;
 
     uint256 public nextPoolId = 1;
     uint256 public nextBetId = 1;
@@ -117,15 +126,26 @@ contract BettingPools is Ownable {
     event PoolCreated(uint256 poolId, CreatePoolParams params);
     event PoolClosed(uint256 indexed poolId, uint256 selectedOption, uint40 decisionTime);
     event BetPlaced(
-        uint256 indexed betId, uint256 indexed poolId, address indexed user, uint256 optionIndex, uint256 amount
+        uint256 indexed betId,
+        uint256 indexed poolId,
+        address indexed user,
+        uint256 optionIndex,
+        uint256 amount,
+        TokenType tokenType
     );
     event TwitterPostIdSet(uint256 indexed poolId, string twitterPostId);
     event PayoutClaimed(
-        uint256 indexed betId, uint256 indexed poolId, address indexed user, uint256 amount, BetOutcome resolution
+        uint256 indexed betId,
+        uint256 indexed poolId,
+        address indexed user,
+        uint256 amount,
+        BetOutcome resolution,
+        TokenType tokenType
     );
 
-    constructor(address _usdc) Ownable(msg.sender) {
+    constructor(address _usdc, address _betPoints) Ownable(msg.sender) {
         usdc = ERC20Permit(_usdc);
+        betPoints = ERC20Permit(_betPoints);
     }
 
     function createPool(CreatePoolParams calldata params) external onlyOwner returns (uint256 poolId) {
@@ -139,7 +159,8 @@ contract BettingPools is Ownable {
         pool.options = params.options;
         pool.betsCloseAt = params.betsCloseAt;
         pool.decisionTime = 0; // Initially set to 0, will be set when pool is graded
-        pool.betTotals = [0, 0];
+        pool.usdcBetTotals = [0, 0];
+        pool.pointsBetTotals = [0, 0];
         pool.betIds = new uint256[](0);
         pool.winningOption = 0;
         pool.status = PoolStatus.PENDING;
@@ -166,19 +187,22 @@ contract BettingPools is Ownable {
         uint256 optionIndex,
         uint256 amount,
         address bettor,
-        uint256 usdcPermitDeadline,
+        TokenType tokenType,
+        uint256 permitDeadline,
         Signature calldata permitSignature
     ) external returns (uint256 betId) {
         if (block.timestamp > pools[poolId].betsCloseAt) revert BettingPeriodClosed();
         if (pools[poolId].status != PoolStatus.PENDING) revert PoolNotOpen();
         if (optionIndex >= 2) revert InvalidOptionIndex();
         if (amount <= 0) revert ZeroAmount();
-        if (usdc.balanceOf(bettor) < amount) revert InsufficientBalance();
 
-        usdc.permit(
-            bettor, address(this), amount, usdcPermitDeadline, permitSignature.v, permitSignature.r, permitSignature.s
+        ERC20Permit token = tokenType == TokenType.USDC ? usdc : betPoints;
+        if (token.balanceOf(bettor) < amount) revert InsufficientBalance();
+
+        token.permit(
+            bettor, address(this), amount, permitDeadline, permitSignature.v, permitSignature.r, permitSignature.s
         );
-        usdc.transferFrom(bettor, address(this), amount);
+        token.transferFrom(bettor, address(this), amount);
 
         betId = pools[poolId].betsByUser[bettor][optionIndex].id;
         if (betId == 0) {
@@ -193,18 +217,25 @@ contract BettingPools is Ownable {
                 createdAt: block.timestamp,
                 updatedAt: block.timestamp,
                 isPayedOut: false,
-                outcome: BetOutcome.NONE
+                outcome: BetOutcome.NONE,
+                tokenType: tokenType
             });
             bets[betId] = newBet;
             pools[poolId].betIds.push(betId);
             userBets[bettor].push(betId);
+            pools[poolId].betsByUser[bettor][optionIndex] = newBet;
         } else {
             pools[poolId].betsByUser[bettor][optionIndex].amount += amount;
             pools[poolId].betsByUser[bettor][optionIndex].updatedAt = block.timestamp;
         }
-        pools[poolId].betTotals[optionIndex] += amount;
 
-        emit BetPlaced(betId, poolId, bettor, optionIndex, amount);
+        if (tokenType == TokenType.USDC) {
+            pools[poolId].usdcBetTotals[optionIndex] += amount;
+        } else {
+            pools[poolId].pointsBetTotals[optionIndex] += amount;
+        }
+
+        emit BetPlaced(betId, poolId, bettor, optionIndex, amount, tokenType);
     }
 
     function gradeBet(uint256 poolId, uint256 responseOption, uint40 decisionTime) external onlyOwner {
@@ -237,22 +268,27 @@ contract BettingPools is Ownable {
 
             bets[betId].isPayedOut = true;
             uint256 poolId = bets[betId].poolId;
+            TokenType tokenType = bets[betId].tokenType;
+            ERC20Permit token = tokenType == TokenType.USDC ? usdc : betPoints;
 
             // Check if bet was placed after or on decisionTime and should be voided
             if (pools[poolId].decisionTime > 0 && bets[betId].createdAt >= pools[poolId].decisionTime) {
                 bets[betId].outcome = BetOutcome.VOIDED;
-                usdc.transfer(bets[betId].owner, bets[betId].amount);
-                emit PayoutClaimed(betId, poolId, bets[betId].owner, bets[betId].amount, BetOutcome.VOIDED);
+                token.transfer(bets[betId].owner, bets[betId].amount);
+                emit PayoutClaimed(betId, poolId, bets[betId].owner, bets[betId].amount, BetOutcome.VOIDED, tokenType);
                 continue;
             }
 
+            uint256[2] storage betTotals =
+                tokenType == TokenType.USDC ? pools[poolId].usdcBetTotals : pools[poolId].pointsBetTotals;
+
             // If it is a draw or there are no bets on one side or the other, refund the bet
-            if (pools[poolId].isDraw || pools[poolId].betTotals[0] == 0 || pools[poolId].betTotals[1] == 0) {
+            if (pools[poolId].isDraw || betTotals[0] == 0 || betTotals[1] == 0) {
                 BetOutcome resolution = pools[poolId].isDraw ? BetOutcome.DRAW : BetOutcome.VOIDED;
 
                 bets[betId].outcome = resolution;
-                usdc.transfer(bets[betId].owner, bets[betId].amount);
-                emit PayoutClaimed(betId, poolId, bets[betId].owner, bets[betId].amount, resolution);
+                token.transfer(bets[betId].owner, bets[betId].amount);
+                emit PayoutClaimed(betId, poolId, bets[betId].owner, bets[betId].amount, resolution, tokenType);
                 continue;
             }
 
@@ -260,16 +296,16 @@ contract BettingPools is Ownable {
 
             if (bets[betId].option == pools[poolId].winningOption) {
                 bets[betId].outcome = BetOutcome.WON;
-                uint256 winAmount = (bets[betId].amount * pools[poolId].betTotals[losingOption])
-                    / pools[poolId].betTotals[pools[poolId].winningOption] + bets[betId].amount;
+                uint256 winAmount = (bets[betId].amount * betTotals[losingOption])
+                    / betTotals[pools[poolId].winningOption] + bets[betId].amount;
                 uint256 fee = (winAmount * PAYOUT_FEE_BP) / 10000;
                 uint256 payout = winAmount - fee;
-                usdc.transfer(bets[betId].owner, payout);
-                usdc.transfer(owner(), fee);
-                emit PayoutClaimed(betId, poolId, bets[betId].owner, payout, BetOutcome.WON);
+                token.transfer(bets[betId].owner, payout);
+                token.transfer(owner(), fee);
+                emit PayoutClaimed(betId, poolId, bets[betId].owner, payout, BetOutcome.WON, tokenType);
             } else {
                 bets[betId].outcome = BetOutcome.LOST;
-                emit PayoutClaimed(betId, poolId, bets[betId].owner, 0, BetOutcome.LOST);
+                emit PayoutClaimed(betId, poolId, bets[betId].owner, 0, BetOutcome.LOST, tokenType);
             }
         }
     }
