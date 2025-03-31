@@ -39,7 +39,8 @@ contract BettingPools is Ownable {
         uint256[2] usdcBetTotals; // Total amount bet on each option for USDC [optionIndex]. Must align with options array
         uint256[2] pointsBetTotals; // Total amount bet on each option for POINTS [optionIndex]. Must align with options array
         uint256[] betIds; // Array of ids for user bets
-        mapping(address => Bet[2]) betsByUser; // Mapping from user address to their bets. Bets for option
+        mapping(address => Bet[2]) usdcBetsByUser; // Mapping from user address to their USDC bets. Bets for option
+        mapping(address => Bet[2]) pointsBetsByUser; // Mapping from user address to their Points bets. Bets for option
         uint256 winningOption; // Option that won the bet (0 or 1) (only matters if status is GRADED)
         PoolStatus status; // Status of the bet
         bool isDraw; // Indicates if the bet is a push (no winner and betters are refunded)
@@ -204,7 +205,10 @@ contract BettingPools is Ownable {
         );
         token.transferFrom(bettor, address(this), amount);
 
-        betId = pools[poolId].betsByUser[bettor][optionIndex].id;
+        betId = tokenType == TokenType.USDC 
+            ? pools[poolId].usdcBetsByUser[bettor][optionIndex].id 
+            : pools[poolId].pointsBetsByUser[bettor][optionIndex].id;
+            
         if (betId == 0) {
             // User has not bet on this option before
             betId = nextBetId++;
@@ -223,10 +227,19 @@ contract BettingPools is Ownable {
             bets[betId] = newBet;
             pools[poolId].betIds.push(betId);
             userBets[bettor].push(betId);
-            pools[poolId].betsByUser[bettor][optionIndex] = newBet;
+            if (tokenType == TokenType.USDC) {
+                pools[poolId].usdcBetsByUser[bettor][optionIndex] = newBet;
+            } else {
+                pools[poolId].pointsBetsByUser[bettor][optionIndex] = newBet;
+            }
         } else {
-            pools[poolId].betsByUser[bettor][optionIndex].amount += amount;
-            pools[poolId].betsByUser[bettor][optionIndex].updatedAt = block.timestamp;
+            if (tokenType == TokenType.USDC) {
+                pools[poolId].usdcBetsByUser[bettor][optionIndex].amount += amount;
+                pools[poolId].usdcBetsByUser[bettor][optionIndex].updatedAt = block.timestamp;
+            } else {
+                pools[poolId].pointsBetsByUser[bettor][optionIndex].amount += amount;
+                pools[poolId].pointsBetsByUser[bettor][optionIndex].updatedAt = block.timestamp;
+            }
         }
 
         if (tokenType == TokenType.USDC) {

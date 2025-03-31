@@ -24,7 +24,7 @@ export const addressToBackgroundColor = (address: string) => {
 };
 
 export function generateRandomColor(isLight: boolean) {
-  const hue = Math.random() * 360;
+  const hue = Math.random() * 360
   const saturation = 50 + Math.random() * 50; // 50-100%
   const lightness = isLight ? 60 + Math.random() * 30 : 10 + Math.random() * 30; // 60-90% for light, 10-40% for dark
 
