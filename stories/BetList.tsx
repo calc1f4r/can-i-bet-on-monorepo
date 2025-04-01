@@ -26,6 +26,7 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 import { PlayerAddressChip } from "./PlayerAddressChip";
+import { useTokenContext } from "@/components/TokenContext";
 
 // Add new types for sorting
 
@@ -42,7 +43,10 @@ export const BetList = ({
   loading?: boolean;
   variant?: BetListVariant;
 }) => {
-  const filter: Bet_Filter = {};
+  const { tokenType } = useTokenContext();
+  const filter: Bet_Filter = {
+    tokenType: tokenType,
+  };
   if (poolId) {
     filter.pool = poolId;
   }
@@ -67,8 +71,6 @@ export const BetList = ({
     },
   });
 
-  console.log("data", data);
-  console.log("loading", loading);
   const handleSort = (field: BetPlaced_OrderBy) => {
     if (field === sortField) {
       // Toggle direction if clicking same field
@@ -165,7 +167,6 @@ export const BetList = ({
     return <LoadingSkeleton />;
   }
 
-  console.log("data", data);
   // Update desktop table columns based on variant
   const getTableHeaders = () => {
     if (variant === "home") {

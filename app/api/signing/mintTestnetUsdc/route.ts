@@ -1,10 +1,10 @@
-import USDPAbi from "@/contracts/out/USDP.sol/USDP.json";
+import BetPointsAbi from "@/contracts/out/BetPoints.sol/BetPoints.json"; //SWAP TO CONTRACT TYPES
 import { CHAIN_CONFIG } from "@/lib/config";
 import { USDC_DECIMALS } from "@/lib/utils";
 import { ethers } from "ethers";
 import Redis from "ioredis";
 import { NextResponse } from "next/server";
-import { scroll, scrollSepolia } from "viem/chains";
+import { baseSepolia } from "viem/chains";
 export type TopUpUsdcBalanceParams = {
   chainId: string | number;
   walletAddress: string;
@@ -22,11 +22,8 @@ export type TopUpUsdcBalanceResponse = {
 const PRIVATE_CHAIN_CONFIG: {
   [key: keyof typeof CHAIN_CONFIG]: { rpcUrl: string };
 } = {
-  [scrollSepolia.id]: {
-    rpcUrl: process.env.SCROLL_SEPOLIA_RPC_URL || "", // Move to env variable
-  },
-  [scroll.id]: {
-    rpcUrl: process.env.SCROLL_RPC_URL || "", // Move to env variable
+  [baseSepolia.id]: {
+    rpcUrl: process.env.BASE_SEPOLIA_RPC_URL || "", // Move to env variable
   },
 };
 
@@ -140,7 +137,7 @@ export async function POST(request: Request) {
 
     const usdcContract = new ethers.Contract(
       chainConfig.usdcAddress,
-      USDPAbi.abi,
+      BetPointsAbi.abi,
       wallet
     );
     const balance = await usdcContract.balanceOf(body.walletAddress);

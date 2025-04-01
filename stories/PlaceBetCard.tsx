@@ -2,6 +2,7 @@
 
 import { GET_BETS } from "@/app/queries";
 import { useEmbeddedWallet } from "@/components/EmbeddedWalletProvider";
+import { useTokenContext } from "@/components/TokenContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -18,6 +19,8 @@ import { renderUsdcPrefix } from "@/lib/usdcUtils";
 import {
   FrontendPoolStatus,
   getFrontendPoolStatus,
+  getTotalBetsForOption,
+  getVolumeForTokenType,
   USDC_DECIMALS,
   usdcAmountToDollarsNumber,
 } from "@/lib/utils";
@@ -70,7 +73,7 @@ const betFormSchema = z.object({
 type BetFormValues = z.infer<typeof betFormSchema>;
 
 // Custom hook to fetch user bets for a specific pool
-const useUserBets = (poolId: string, userAddress?: string) => {
+const useUserBets = (poolId: string | undefined, userAddress?: string) => {
   const [userBets, setUserBets] = useState<GetBetsQuery["bets"]>([]);
   const { refetch: refetchUsdcBalance } = useUsdcBalance();
   // Only query if we have both poolId and userAddress
@@ -168,6 +171,7 @@ export const PlaceBetCard = ({ pool, loading }: PlaceBetCardProps) => {
   const { usdcBalance, error: usdcBalanceError } = useUsdcBalance();
   const { embeddedWallet, chainConfig, currentChainId } = useEmbeddedWallet();
   const { ready, wallets } = useWallets();
+  const { tokenType } = useTokenContext();
 
   // Fetch user bets for this pool
   const { userBets, loading: loadingBets } = useUserBets(
@@ -252,7 +256,7 @@ export const PlaceBetCard = ({ pool, loading }: PlaceBetCardProps) => {
   const betAmount = watch("betAmount");
   const betAmountInUSDC =
     parseFloat(betAmount || "0") * Math.pow(10, USDC_DECIMALS);
-  const { totalBetsByOption, options } = pool;
+  const { options } = pool;
   const frontendPoolStatus = getFrontendPoolStatus(
     pool.status,
     pool.betsCloseAt
@@ -326,6 +330,11 @@ export const PlaceBetCard = ({ pool, loading }: PlaceBetCardProps) => {
             {options.map((option, index) => {
               const colorClassnames = optionColorClasses[index];
 
+              // Get option totals using the utility function
+              const optionTotals = pool.options.map((_, i) =>
+                getTotalBetsForOption(pool, tokenType, i)
+              );
+
               return (
                 <div
                   key={index}
@@ -338,8 +347,8 @@ export const PlaceBetCard = ({ pool, loading }: PlaceBetCardProps) => {
                     chainId={currentChainId}
                     amount={betAmountInUSDC.toString()}
                     colorClassnames={colorClassnames}
-                    totalBetsByOption={totalBetsByOption}
-                    totalBets={pool.totalBets}
+                    totalBetsByOption={optionTotals}
+                    totalBets={getVolumeForTokenType(pool, tokenType)}
                   />
                 </div>
               );

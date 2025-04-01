@@ -1,4 +1,4 @@
-import USDPAbi from "@/contracts/out/USDP.sol/USDP.json";
+import BetPointsAbi from "@/contracts/out/BetPoints.sol/BetPoints.json"; //SWAP TO CONTRACT TYPES
 import { CHAIN_CONFIG } from "@/lib/config";
 import { ethers, ZeroAddress } from "ethers";
 import { NextResponse } from "next/server";
@@ -61,7 +61,7 @@ export async function POST(request: Request) {
     const wallet = new ethers.Wallet(process.env.MAIN_PRIVATE_KEY!, provider);
     const usdcContract = new ethers.Contract(
       chainConfig.usdcAddress,
-      USDPAbi.abi,
+      BetPointsAbi.abi,
       wallet
     );
 

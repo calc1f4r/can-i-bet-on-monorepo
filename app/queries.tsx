@@ -19,9 +19,10 @@ export const GET_POOLS = gql(`
         poolIntId
         question
         options
-        usdcBetTotals
-        pointsBetTotals
-        totalBetsByOption
+        usdcVolume
+        pointsVolume
+        usdcBetTotalsByOption
+        pointsBetTotalsByOption
         selectedOption
         status
         imageUrl
@@ -61,9 +62,10 @@ export const GET_POOLS_SUBSCRIPTION = gql(`
         poolIntId
         question
         options
-        usdcBetTotals
-        pointsBetTotals
-        totalBetsByOption
+        usdcVolume
+        pointsVolume
+        usdcBetTotalsByOption
+        pointsBetTotalsByOption
         selectedOption
         status
         imageUrl
@@ -120,9 +122,10 @@ export const GET_BETS = gql(`
       poolIntId
       question
       options
-      usdcBetTotals
-      pointsBetTotals
-      totalBetsByOption
+      usdcVolume
+      pointsVolume
+      usdcBetTotalsByOption
+      pointsBetTotalsByOption
       selectedOption
       status
       decisionTime
@@ -160,9 +163,10 @@ subscription GetBetsSubscription(
       poolIntId
       question
       options
-      usdcBetTotals
-      pointsBetTotals
-      totalBetsByOption
+      usdcVolume
+      pointsVolume
+      usdcBetTotalsByOption
+      pointsBetTotalsByOption
       selectedOption
       status
       decisionTime
@@ -190,9 +194,10 @@ export const GET_POOL = gql(`
       question
       options
       betsCloseAt
-      usdcBetTotals
-      pointsBetTotals
-      totalBetsByOption
+      usdcVolume
+      pointsVolume
+      usdcBetTotalsByOption
+      pointsBetTotalsByOption
       selectedOption
       status
       chainId
@@ -214,9 +219,10 @@ export const GET_POOL_SUBSCRIPTION = gql(`
       question
       options
       betsCloseAt
-      usdcBetTotals
-      pointsBetTotals
-      totalBetsByOption
+      usdcVolume
+      pointsVolume
+      usdcBetTotalsByOption
+      pointsBetTotalsByOption
       selectedOption
       status
       chainId

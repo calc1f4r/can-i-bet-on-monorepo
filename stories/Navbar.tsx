@@ -4,6 +4,7 @@ import {
   PrivyLoginButton,
   PrivyLogoutButton,
 } from "@/components/PrivyLoginButton";
+import { useTokenContext } from "@/components/TokenContext";
 import {
   Sheet,
   SheetContent,
@@ -18,15 +19,14 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { useUsdcBalance } from "@/components/useUsdcBalance";
+import { TokenType } from "@/lib/__generated__/graphql";
 import { renderUsdcPrefix } from "@/lib/usdcUtils";
-import { parseChainId } from "@/lib/utils";
 import PromptbetLogo from "@/stories/assets/CanIBetOn Logo.jpg";
-import usdpLogo from "@/stories/assets/usdp-logo.svg";
 import { usePrivy } from "@privy-io/react-auth";
 import { AlertCircle, Menu } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
-import { base, baseSepolia } from "viem/chains";
+import { baseSepolia } from "viem/chains";
 
 export const defaultChainId = baseSepolia.id;
 
@@ -34,11 +34,13 @@ export const Navbar = () => {
   const { ready, authenticated } = usePrivy();
 
   // Use our context for wallet and chain info
-  const { embeddedWallet, currentChainId, switchChain, chainConfig } =
-    useEmbeddedWallet();
+  const { embeddedWallet, chainConfig } = useEmbeddedWallet();
 
   // Use the useUsdcBalance hook instead of implementing fetchUsdcBalance
   const { usdcBalance, error } = useUsdcBalance();
+
+  // Use token context for switching between tokens
+  const { tokenType, setTokenType, tokenSymbol, tokenLogo } = useTokenContext();
 
   return (
     <nav className="border-b">
@@ -93,71 +95,44 @@ export const Navbar = () => {
 
         {/* Desktop Navigation */}
         <div className="hidden md:flex items-center gap-4">
-          {ready && authenticated && embeddedWallet && (
-            <>
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <div className="flex-col text-sm font-medium min-w-24 text-center border rounded-full relative">
-                      <div className="text-xs text-gray-500">Balance</div>
-                      <div className="flex items-center justify-center gap-1">
-                        {renderUsdcPrefix(chainConfig)}
-                        {parseFloat(usdcBalance || "0").toLocaleString()}
-                      </div>
-                      {error && (
-                        <span className="absolute -right-2 -top-2">
-                          <AlertCircle className="h-4 w-4 text-red-500" />
-                        </span>
-                      )}
-                    </div>
-                  </TooltipTrigger>
-                  {error && (
-                    <TooltipContent>
-                      <p>{error}</p>
-                    </TooltipContent>
-                  )}
-                </Tooltip>
-              </TooltipProvider>
-              {/* Non-interactive NetworkButton */}
+          {/* Token Switch - Always visible */}
+          <div className="flex items-center gap-2">
+            {tokenLogo}
+            <Switch
+              checked={tokenType === TokenType.Points}
+              onCheckedChange={(value) => {
+                setTokenType(value ? TokenType.Points : TokenType.Usdc);
+              }}
+              className="bg-gray-800"
+            />
+            <span>{tokenSymbol}</span>
+          </div>
 
-              <div className="flex items-center gap-2">
-                <Image
-                  src={usdpLogo}
-                  alt="USD Points Logo"
-                  width={20}
-                  height={20}
-                />
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Switch
-                        checked={currentChainId === parseChainId(base.id)}
-                        onCheckedChange={(value) => {
-                          console.log({
-                            value,
-                            currentChainId,
-                            baseId: String(base.id),
-                          });
-                          if (
-                            currentChainId === String(parseChainId(base.id))
-                          ) {
-                            switchChain(baseSepolia.id);
-                          } else {
-                            switchChain(base.id);
-                          }
-                        }}
-                        className="bg-gray-800"
-                        disabled={true}
-                      />
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p>Mainnet coming soon</p>
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
-                <span>USD</span>
-              </div>
-            </>
+          {/* Balance and Auth - Only visible when authenticated */}
+          {ready && authenticated && embeddedWallet && (
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div className="flex-col text-sm font-medium min-w-24 text-center border rounded-full relative">
+                    <div className="text-xs text-gray-500">Balance</div>
+                    <div className="flex items-center justify-center gap-1">
+                      {renderUsdcPrefix(chainConfig)}
+                      {parseFloat(usdcBalance || "0").toLocaleString()}
+                    </div>
+                    {error && (
+                      <span className="absolute -right-2 -top-2">
+                        <AlertCircle className="h-4 w-4 text-red-500" />
+                      </span>
+                    )}
+                  </div>
+                </TooltipTrigger>
+                {error && (
+                  <TooltipContent>
+                    <p>{error}</p>
+                  </TooltipContent>
+                )}
+              </Tooltip>
+            </TooltipProvider>
           )}
           {ready && authenticated ? (
             <PrivyLogoutButton />
@@ -177,39 +152,25 @@ export const Navbar = () => {
             <SheetContent side="right" className="pt-10">
               <SheetTitle className="text-left mb-4">Menu</SheetTitle>
               <div className="flex flex-col gap-4">
-                {ready && authenticated && embeddedWallet && (
-                  <div className="flex items-center justify-center gap-2 p-3 rounded-md bg-gray-800">
-                    <Image
-                      src={usdpLogo}
-                      alt="USD Points Logo"
-                      width={20}
-                      height={20}
-                    />
-                    <TooltipProvider>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <Switch
-                            checked={currentChainId === parseChainId(base.id)}
-                            onCheckedChange={() => {
-                              if (
-                                currentChainId === String(parseChainId(base.id))
-                              ) {
-                                switchChain(baseSepolia.id);
-                              } else {
-                                switchChain(base.id);
-                              }
-                            }}
-                            disabled={true}
-                          />
-                        </TooltipTrigger>
-                        <TooltipContent>
-                          <p>Mainnet coming soon</p>
-                        </TooltipContent>
-                      </Tooltip>
-                    </TooltipProvider>
-                    <span>USD</span>
-                  </div>
-                )}
+                {/* Token Switch in Mobile Menu - Always visible */}
+                <div className="flex items-center justify-center gap-2 p-3 rounded-md bg-gray-800">
+                  {tokenLogo}
+                  <Switch
+                    checked={tokenType === TokenType.Points}
+                    onCheckedChange={(value) => {
+                      console.log("value", value);
+                      console.log("current token type", tokenType);
+                      console.log("Points token type", TokenType.Points);
+                      console.log("USDC token type", TokenType.Usdc);
+                      console.log(
+                        "setting to",
+                        value ? TokenType.Points : TokenType.Usdc
+                      );
+                      setTokenType(value ? TokenType.Points : TokenType.Usdc);
+                    }}
+                  />
+                  <span>{tokenSymbol}</span>
+                </div>
                 <div className="mt-2">
                   {ready && authenticated ? (
                     <PrivyLogoutButton />

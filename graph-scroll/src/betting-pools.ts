@@ -88,27 +88,23 @@ export function handleBetPlaced(event: BetPlacedEvent): void {
     throw new Error("Pool not found");
   }
 
-  const optionTotals = pool.totalBetsByOption;
-  optionTotals[event.params.optionIndex.toI32()] = optionTotals[
-    event.params.optionIndex.toI32()
-  ].plus(event.params.amount);
-  pool.totalBetsByOption = optionTotals;
-
   // Update the appropriate bet totals based on tokenType
   if (event.params.tokenType == 0) {
     // USDC
-    const usdcTotals = pool.usdcBetTotals;
+    const usdcTotals = pool.usdcBetTotalsByOption;
     usdcTotals[event.params.optionIndex.toI32()] = usdcTotals[
       event.params.optionIndex.toI32()
     ].plus(event.params.amount);
-    pool.usdcBetTotals = usdcTotals;
+    pool.usdcBetTotalsByOption = usdcTotals;
+    pool.usdcVolume = pool.usdcVolume.plus(event.params.amount);
   } else {
     // POINTS
-    const pointsTotals = pool.pointsBetTotals;
+    const pointsTotals = pool.pointsBetTotalsByOption;
     pointsTotals[event.params.optionIndex.toI32()] = pointsTotals[
       event.params.optionIndex.toI32()
     ].plus(event.params.amount);
-    pool.pointsBetTotals = pointsTotals;
+    pool.pointsBetTotalsByOption = pointsTotals;
+    pool.pointsVolume = pool.pointsVolume.plus(event.params.amount);
   }
 
   // Update lastUpdated timestamps
@@ -185,9 +181,10 @@ export function handlePoolCreated(event: PoolCreatedEvent): void {
   pool.poolIntId = event.params.poolId;
   pool.question = event.params.params.question;
   pool.options = event.params.params.options;
-  pool.totalBetsByOption = [BigInt.fromI32(0), BigInt.fromI32(0)];
-  pool.usdcBetTotals = [BigInt.fromI32(0), BigInt.fromI32(0)];
-  pool.pointsBetTotals = [BigInt.fromI32(0), BigInt.fromI32(0)];
+  pool.usdcBetTotalsByOption = [BigInt.fromI32(0), BigInt.fromI32(0)];
+  pool.pointsBetTotalsByOption = [BigInt.fromI32(0), BigInt.fromI32(0)];
+  pool.usdcVolume = BigInt.fromI32(0);
+  pool.pointsVolume = BigInt.fromI32(0);
   pool.selectedOption = BigInt.fromI32(0);
   pool.status = "PENDING";
   pool.imageUrl = event.params.params.imageUrl;

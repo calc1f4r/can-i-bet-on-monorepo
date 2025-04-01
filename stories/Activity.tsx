@@ -1,4 +1,5 @@
 import { GET_BETS } from "@/app/queries";
+import { useTokenContext } from "@/components/TokenContext";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -24,12 +25,24 @@ export const Activity: FC<{
   showQuestion = true,
   showPoolImage = true,
 }) => {
+  const { tokenType } = useTokenContext();
   // State to store combined data from query and subscription
   const [poolBets, setPoolBets] = useState<GetBetsQuery["bets"]>([]);
   const [showAdditionalBets, setShowAdditionalBets] = useState(0);
 
   // Create filter based on poolId if provided
-  const filter = useMemo(() => (poolId ? { pool: poolId } : {}), [poolId]);
+  const filter = useMemo(
+    () =>
+      poolId
+        ? {
+            pool: poolId,
+            tokenType: tokenType,
+          }
+        : {
+            tokenType: tokenType,
+          },
+    [poolId, tokenType]
+  );
 
   // Query for initial data with polling for real-time updates
   const {

@@ -1,6 +1,7 @@
 "use client";
 import PrivyProviderWrapper from "@/components/PrivyProvider";
 import { ThemeProvider } from "@/components/ThemeProvider";
+import { TokenProvider } from "@/components/TokenContext";
 import { Toaster } from "@/components/ui/sonner";
 import { BottomNav } from "@/stories/BottomNav";
 import { Navbar } from "@/stories/Navbar";
@@ -25,7 +26,7 @@ const client = new ApolloClient({
   cache: new InMemoryCache(),
 });
 
-//TODO I fought the law
+//TODO I fought the law and the law won
 // if (process.env.NODE_ENV !== "development") {
 // Adds messages only in a dev environment
 loadDevMessages();
@@ -52,17 +53,19 @@ export default function RootLayout({
           forcedTheme="dark"
         >
           <PrivyProviderWrapper>
-            <ApolloProvider client={client}>
-              <div className="flex flex-col min-h-screen relative">
-                <Navbar />
-                <div className="flex-1 relative">{children}</div>
-                <div className="h-16 md:hidden">
-                  {/* Spacer for bottom nav on mobile */}
+            <TokenProvider>
+              <ApolloProvider client={client}>
+                <div className="flex flex-col min-h-screen relative">
+                  <Navbar />
+                  <div className="flex-1 relative">{children}</div>
+                  <div className="h-16 md:hidden">
+                    {/* Spacer for bottom nav on mobile */}
+                  </div>
+                  <BottomNav currentPath={pathname} />
                 </div>
-                <BottomNav currentPath={pathname} />
-              </div>
-              <Toaster />
-            </ApolloProvider>
+                <Toaster />
+              </ApolloProvider>
+            </TokenProvider>
           </PrivyProviderWrapper>
         </ThemeProvider>
       </body>

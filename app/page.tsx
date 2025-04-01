@@ -2,6 +2,7 @@
 
 import { GET_POOLS } from "@/app/queries";
 import { PrivyLoginButton } from "@/components/PrivyLoginButton";
+import { useTokenContext } from "@/components/TokenContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -10,6 +11,11 @@ import {
   Pool_OrderBy,
   PoolStatus,
 } from "@/lib/__generated__/graphql";
+import {
+  getTotalBetsForOption,
+  getVolumeForTokenType,
+  getVolumeOrderByTokenType,
+} from "@/lib/utils";
 import PromptbetLogo from "@/stories/assets/CanIBetOn Logo.jpg";
 import { CountdownTimer } from "@/stories/CountdownTimer";
 import { CurrentSpreadCard } from "@/stories/CurrentSpreadCard";
@@ -71,6 +77,7 @@ type PrivyUserInfo = {
 };
 
 export default function PoolsPage() {
+  const { tokenType } = useTokenContext();
   const [activeFilter, setActiveFilter] = useState("newest");
   const [searchQuery, setSearchQuery] = useState("");
   const [debouncedSearchQuery, setDebouncedSearchQuery] = useState("");
@@ -112,7 +119,7 @@ export default function PoolsPage() {
       // Default is already set (CreatedBlockTimestamp Desc)
       break;
     case "volume":
-      orderBy = Pool_OrderBy.TotalBets;
+      orderBy = getVolumeOrderByTokenType(tokenType);
       orderDirection = OrderDirection.Desc;
       break;
     case "ending_soon":
@@ -178,7 +185,7 @@ export default function PoolsPage() {
           status: PoolStatus.Pending,
           betsCloseAt_lte: Math.floor(Date.now() / 1000).toString(),
         },
-        orderBy: Pool_OrderBy.TotalBets,
+        orderBy: getVolumeOrderByTokenType(tokenType),
         orderDirection: OrderDirection.Desc,
       },
       // Use a unique context to isolate this query
@@ -487,9 +494,11 @@ export default function PoolsPage() {
                   ) : highestVolumePools?.pools &&
                     highestVolumePools.pools.length > 0 ? (
                     highestVolumePools.pools
-                      .filter(
-                        (pool) => pool.totalBets && parseInt(pool.totalBets) > 0
-                      )
+                      .filter((pool) => {
+                        const volume = getVolumeForTokenType(pool, tokenType);
+                        // Remove pools with no volume
+                        return volume && parseInt(volume) > 0;
+                      })
                       .slice(0, 3)
                       .map((pool) => (
                         <Link key={pool.id} href={`/pools/${pool.id}`}>
@@ -502,7 +511,11 @@ export default function PoolsPage() {
                                 <VolumeSparkline className="flex-shrink-0" />
                                 <IconsWithNumbers
                                   icon={MdStackedLineChart}
-                                  number={parseInt(pool.totalBets) / 1000000}
+                                  number={
+                                    parseInt(
+                                      getVolumeForTokenType(pool, tokenType)
+                                    ) / 1000000
+                                  }
                                   prefix="$"
                                   suffix=" vol."
                                   abbreviateNumbers={true}
@@ -511,26 +524,36 @@ export default function PoolsPage() {
                                 />
                               </div>
                               <div className="w-24">
-                                {pool.options && pool.totalBetsByOption && (
+                                {
                                   <RatioBar
                                     items={[
                                       {
                                         label: pool.options[0] || "Yes",
                                         amount:
-                                          parseInt(pool.totalBetsByOption[0]) ||
-                                          0,
+                                          parseInt(
+                                            getTotalBetsForOption(
+                                              pool,
+                                              tokenType,
+                                              0
+                                            )
+                                          ) || 0,
                                         color: "hsl(var(--option-a-color))",
                                       },
                                       {
                                         label: pool.options[1] || "No",
                                         amount:
-                                          parseInt(pool.totalBetsByOption[1]) ||
-                                          0,
+                                          parseInt(
+                                            getTotalBetsForOption(
+                                              pool,
+                                              tokenType,
+                                              1
+                                            )
+                                          ) || 0,
                                         color: "hsl(var(--option-b-color))",
                                       },
                                     ]}
                                   />
-                                )}
+                                }
                               </div>
                             </div>
                           </div>
@@ -591,7 +614,9 @@ export default function PoolsPage() {
                               <div className="flex justify-between items-center mt-1">
                                 <IconsWithNumbers
                                   icon={MdStackedLineChart}
-                                  number={parseInt(pool.totalBets) / 1000000}
+                                  number={parseInt(
+                                    getVolumeForTokenType(pool, tokenType)
+                                  ) / 1000000}
                                   prefix="$"
                                   suffix=" vol."
                                   abbreviateNumbers={true}

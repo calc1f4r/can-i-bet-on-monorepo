@@ -65,9 +65,10 @@ type Pool @entity {
   poolIntId: BigInt! # uint256
   question: String! # string
   options: [String!]! # string[2]
-  totalBetsByOption: [BigInt!]! # uint256[2]
-  usdcBetTotals: [BigInt!]! # uint256[2]
-  pointsBetTotals: [BigInt!]! # uint256[2]
+  usdcBetTotalsByOption: [BigInt!]! # uint256[2]
+  pointsBetTotalsByOption: [BigInt!]! # uint256[2]
+  usdcVolume: BigInt! # Total USDC bet amount across all options
+  pointsVolume: BigInt! # Total POINTS bet amount across all options
   selectedOption: BigInt! # uint256
   status: PoolStatus!
   bets: [Bet!]! @derivedFrom(field: "pool")

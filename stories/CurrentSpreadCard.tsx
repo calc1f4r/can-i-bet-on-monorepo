@@ -1,5 +1,6 @@
 import { GET_POOL } from "@/app/queries";
 import { useEmbeddedWallet } from "@/components/EmbeddedWalletProvider";
+import { useTokenContext } from "@/components/TokenContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -9,6 +10,8 @@ import { renderUsdcPrefix } from "@/lib/usdcUtils";
 import {
   FrontendPoolStatus,
   getFrontendPoolStatus,
+  getTotalBetsForOption,
+  getVolumeForTokenType,
   usdcAmountToDollars,
 } from "@/lib/utils";
 import { useQuery } from "@apollo/client";
@@ -47,6 +50,7 @@ export const CurrentSpreadCard: FC<CurrentSpreadCardProps> = ({
   cardClassName = "w-full max-w-md mx-auto",
   showTotalBets = true,
 }) => {
+  const { tokenType } = useTokenContext();
   const { chainConfig } = useEmbeddedWallet();
   const {
     data,
@@ -61,9 +65,6 @@ export const CurrentSpreadCard: FC<CurrentSpreadCardProps> = ({
   // Use either the provided pool or the one from the query
   const pool = propPool || data?.pool;
   const loading = propLoading || queryLoading;
-
-  // Add this for debugging
-  // console.log("Pool data:", pool);
 
   if (loading) return <LoadingSkeleton />;
   if (error || !pool) {
@@ -81,24 +82,21 @@ export const CurrentSpreadCard: FC<CurrentSpreadCardProps> = ({
   const ratioItems = [
     {
       label: pool.options[0] || "Oh, yes",
-      amount: parseInt(pool.totalBetsByOption[0]) || 0, // Ensure number
+      amount: Number(getTotalBetsForOption(pool, tokenType, 0)) || 0,
       color: "hsl(var(--option-a-color))",
     },
     {
       label: pool.options[1] || "Oh, No",
-      amount: parseInt(pool.totalBetsByOption[1]) || 0, // Ensure number
+      amount: Number(getTotalBetsForOption(pool, tokenType, 1)) || 0,
       color: "hsl(var(--option-b-color))",
     },
   ];
-
-  // Add this for debugging
-  // console.log("Ratio items:", ratioItems);
 
   const frontendPoolStatus = getFrontendPoolStatus(
     pool.status,
     pool.betsCloseAt
   );
-
+  const totalBets = getVolumeForTokenType(pool, tokenType);
   return (
     <Card className={cardClassName}>
       {showTitle && (
@@ -143,7 +141,9 @@ export const CurrentSpreadCard: FC<CurrentSpreadCardProps> = ({
                 </div>
                 <div className="text-lg font-semibold ml-auto flex items-center gap-1">
                   {renderUsdcPrefix(chainConfig)}
-                  {usdcAmountToDollars(pool.totalBetsByOption[index] || 0)}
+                  {usdcAmountToDollars(
+                    getTotalBetsForOption(pool, tokenType, index) || 0
+                  )}
                 </div>
               </div>
             );
@@ -152,12 +152,11 @@ export const CurrentSpreadCard: FC<CurrentSpreadCardProps> = ({
           {showTotalBets && (
             <>
               <Separator className="my-2 bg-gray-700 h-px" />
-
               <div className="flex mt-2">
                 <div className="text-lg text-white font-bold">Total bets</div>
                 <div className="text-lg text-white font-semibold ml-auto flex items-center gap-1">
                   {renderUsdcPrefix(chainConfig)}
-                  {usdcAmountToDollars(pool.totalBets || 0)}
+                  {usdcAmountToDollars(totalBets || 0)}
                 </div>
               </div>
             </>

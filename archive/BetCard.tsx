@@ -1,8 +1,13 @@
 "use client";
+import { useTokenContext } from "@/components/TokenContext";
 import { Card, CardContent } from "@/components/ui/card";
 import type { GetPoolsQuery } from "@/lib/__generated__/graphql";
 import { optionColor } from "@/lib/config";
-import { usdcAmountToDollars } from "@/lib/utils";
+import {
+  getTotalBetsForOption,
+  getVolumeForTokenType,
+  usdcAmountToDollars,
+} from "@/lib/utils";
 import { motion } from "framer-motion";
 import Link from "next/link";
 import Jazzicon from "react-jazzicon";
@@ -15,10 +20,12 @@ export interface BetCardProps {
 //TODO Implement placing an actual bet
 const BetCard = ({ pool }: BetCardProps) => {
   console.log("pool", pool);
+  const { tokenType } = useTokenContext();
+
   // Build ratio items for the RatioBar from the pool options and their totals
   const ratioItems = pool.options.map((option, index) => ({
     label: option,
-    amount: Number(pool.totalBetsByOption[index]),
+    amount: Number(getTotalBetsForOption(pool, tokenType, index)),
     color: optionColor[index],
   }));
 
@@ -95,7 +102,9 @@ const BetCard = ({ pool }: BetCardProps) => {
                   {option}
                 </span>
                 <span className="text-muted-foreground">
-                  {usdcAmountToDollars(pool.totalBetsByOption[index])}
+                  {usdcAmountToDollars(
+                    getTotalBetsForOption(pool, tokenType, index)
+                  )}
                 </span>
               </div>
             ))}
@@ -103,8 +112,8 @@ const BetCard = ({ pool }: BetCardProps) => {
 
           {/* Stats section */}
           <div className="mt-auto">
-            {/* TODO: totalBets is known to be inaccurate */}
-            <VolumeWithIcon number={Number(pool.totalBets)} />
+            {/* Use getVolumeForTokenType to get the appropriate total */}
+            <VolumeWithIcon number={getVolumeForTokenType(pool, tokenType)} />
           </div>
         </CardContent>
       </Card>

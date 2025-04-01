@@ -1,9 +1,21 @@
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
-import { Pool, PoolStatus } from "./__generated__/graphql";
+import { baseSepolia } from "viem/chains";
+import {
+  GetPoolQuery,
+  GetPoolsQuery,
+  Pool,
+  Pool_OrderBy,
+  PoolStatus,
+  TokenType,
+} from "./__generated__/graphql";
 import { CHAIN_CONFIG } from "./config";
+
 export const USDC_DECIMALS = 6;
 
+export type GetPoolQueryResult =
+  | GetPoolQuery["pool"]
+  | GetPoolsQuery["pools"][number];
 export enum FrontendPoolStatus {
   Pending = "pending",
   Grading = "grading",
@@ -24,7 +36,7 @@ export const addressToBackgroundColor = (address: string) => {
 };
 
 export function generateRandomColor(isLight: boolean) {
-  const hue = Math.random() * 360
+  const hue = Math.random() * 360;
   const saturation = 50 + Math.random() * 50; // 50-100%
   const lightness = isLight ? 60 + Math.random() * 30 : 10 + Math.random() * 30; // 60-90% for light, 10-40% for dark
 
@@ -93,10 +105,9 @@ export const parseChainId = (chainId: number | string): string => {
     parsedChainId = chainId.replace("eip155:", "");
   }
 
-  // If chain config doesn't exist, fallback to Scroll Sepolia
   // TODO Disgusting
   if (!CHAIN_CONFIG[parsedChainId]) {
-    parsedChainId = 534351;
+    parsedChainId = baseSepolia.id;
   }
 
   return String(parsedChainId);
@@ -118,4 +129,27 @@ export const getFrontendPoolStatus = (
   if (poolStatus === PoolStatus.Graded) {
     return FrontendPoolStatus.Graded;
   }
+};
+
+export const getVolumeForTokenType = (
+  pool: GetPoolQueryResult,
+  tokenType: TokenType
+) => {
+  return tokenType === TokenType.Usdc ? pool?.usdcVolume : pool?.pointsVolume;
+};
+
+export const getTotalBetsForOption = (
+  pool: GetPoolQueryResult,
+  tokenType: TokenType,
+  optionIndex: number
+) => {
+  return tokenType === TokenType.Usdc
+    ? pool?.usdcBetTotalsByOption[optionIndex]
+    : pool?.pointsBetTotalsByOption[optionIndex];
+};
+
+export const getVolumeOrderByTokenType = (tokenType: TokenType) => {
+  return tokenType === TokenType.Usdc
+    ? Pool_OrderBy.UsdcVolume
+    : Pool_OrderBy.PointsVolume;
 };

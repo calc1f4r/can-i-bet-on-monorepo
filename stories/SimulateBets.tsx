@@ -1,12 +1,19 @@
 "use client";
 
 import { GET_POOL } from "@/app/queries";
+import { useTokenContext } from "@/components/TokenContext";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { PoolStatus } from "@/lib/__generated__/graphql";
-import { shame, USDC_DECIMALS, usdcAmountToDollars } from "@/lib/utils";
+import {
+  getTotalBetsForOption,
+  getVolumeForTokenType,
+  shame,
+  USDC_DECIMALS,
+  usdcAmountToDollars,
+} from "@/lib/utils";
 import { useQuery } from "@apollo/client";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { usePrivy, useWallets } from "@privy-io/react-auth";
@@ -66,6 +73,7 @@ const betFormSchema = z.object({
 type BetFormValues = z.infer<typeof betFormSchema>;
 
 export const SimulateBets = ({ poolId }: SimulateBetsProps) => {
+  const { tokenType } = useTokenContext();
   const {
     register,
     watch,
@@ -108,12 +116,25 @@ export const SimulateBets = ({ poolId }: SimulateBetsProps) => {
     );
   }
 
-  const totalPool = data?.pool?.totalBets;
-  const bettingOpen = data?.pool?.status === PoolStatus.Pending;
-  const postiveOption = data?.pool?.options[0] || "Oh, yes";
-  const negativeOption = data?.pool?.options[1] || "Oh, No";
-  const totalPositiveBets = data?.pool?.totalBetsByOption[0];
-  const totalNegativeBets = data?.pool?.totalBetsByOption[1];
+  const pool = data?.pool;
+  if (!pool) {
+    return (
+      <Card className="w-full max-w-md mx-auto">
+        <CardContent className="py-4">
+          <div className="text-red-500">
+            Pool not found. Please try again later.
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  const totalPool = getVolumeForTokenType(pool, tokenType);
+  const bettingOpen = pool.status === PoolStatus.Pending;
+  const postiveOption = pool.options[0] || "Oh, yes";
+  const negativeOption = pool.options[1] || "Oh, No";
+  const totalPositiveBets = getTotalBetsForOption(pool, tokenType, 0);
+  const totalNegativeBets = getTotalBetsForOption(pool, tokenType, 1);
 
   // Calculate potential earnings
   const calculateEarnings = (optionTotal: number) => {
@@ -122,8 +143,8 @@ export const SimulateBets = ({ poolId }: SimulateBetsProps) => {
     return (bet / optionTotal) * totalPool - bet;
   };
 
-  const positiveEarnings = calculateEarnings(totalPositiveBets);
-  const negativeEarnings = calculateEarnings(totalNegativeBets);
+  const positiveEarnings = calculateEarnings(Number(totalPositiveBets));
+  const negativeEarnings = calculateEarnings(Number(totalNegativeBets));
 
   const handleOptionClick = (option: string) => {
     alert(`I would place a bet on ${option} here, if I had one`);
