@@ -32,7 +32,6 @@ const chainIdToNetworkName = (networkName: string): i32 => {
 };
 
 export function handleBetPlaced(event: BetPlacedEvent): void {
-  console.log("handleBetPlaced");
   // dataSource.network()
   const betId = event.params.betId.toString();
   const poolId = event.params.poolId.toString();
