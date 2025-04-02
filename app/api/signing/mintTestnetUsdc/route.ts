@@ -1,5 +1,5 @@
-import BetPointsAbi from "@/contracts/out/BetPoints.sol/BetPoints.json"; //SWAP TO CONTRACT TYPES
 import { CHAIN_CONFIG } from "@/lib/config";
+import { betPointsAbi } from "@/lib/contract.types"; //SWAP TO CONTRACT TYPES
 import { USDC_DECIMALS } from "@/lib/utils";
 import { ethers } from "ethers";
 import Redis from "ioredis";
@@ -135,12 +135,12 @@ export async function POST(request: Request) {
     }
     const wallet = new ethers.Wallet(privateKey, provider);
 
-    const usdcContract = new ethers.Contract(
-      chainConfig.usdcAddress,
-      BetPointsAbi.abi,
+    const pointsContract = new ethers.Contract(
+      chainConfig.pointsAddress,
+      betPointsAbi,
       wallet
     );
-    const balance = await usdcContract.balanceOf(body.walletAddress);
+    const balance = await pointsContract.balanceOf(body.walletAddress);
     const targetAmount = BigInt(1000) * BigInt(10) ** BigInt(USDC_DECIMALS);
 
     // If balance is less than target, add the difference, otherwise add 0
@@ -151,7 +151,7 @@ export async function POST(request: Request) {
 
     if (amountToAdd > 0) {
       console.log("Minting USDC to the user", body.walletAddress, amountToAdd);
-      const tx = await usdcContract.mint(body.walletAddress, amountToAdd);
+      const tx = await pointsContract.mint(body.walletAddress, amountToAdd);
       console.log("Minted USDC to the user", body.walletAddress, amountToAdd);
 
       // Set rate limit after successful mint

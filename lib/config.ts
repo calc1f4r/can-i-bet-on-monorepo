@@ -2,6 +2,8 @@ import baseSepoliaIcon from "@/stories/assets/crypto/base-full.svg";
 import usdpLogo from "@/stories/assets/usdp-logo.svg";
 import { baseSepolia, Chain } from "viem/chains";
 
+export const DEFAULT_CHAIN_ID = baseSepolia.id;
+
 export type ChainConfig = {
   chain: Chain;
   appAddress: `0x${string}`;

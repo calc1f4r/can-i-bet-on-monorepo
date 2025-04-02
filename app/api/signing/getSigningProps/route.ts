@@ -1,6 +1,6 @@
-import BetPointsAbi from "@/contracts/out/BetPoints.sol/BetPoints.json"; //SWAP TO CONTRACT TYPES
 import { TokenType } from "@/lib/__generated__/graphql";
 import { CHAIN_CONFIG } from "@/lib/config";
+import { betPointsAbi } from "@/lib/contract.types"; //SWAP TO CONTRACT TYPES
 import { ethers, ZeroAddress } from "ethers";
 import { NextResponse } from "next/server";
 import { baseSepolia } from "viem/chains";
@@ -74,7 +74,7 @@ export async function POST(request: Request) {
     const wallet = new ethers.Wallet(process.env.MAIN_PRIVATE_KEY!, provider);
     const tokenContract = new ethers.Contract(
       tokenAddress,
-      BetPointsAbi.abi,
+      betPointsAbi,
       wallet
     );
 
@@ -85,6 +85,7 @@ export async function POST(request: Request) {
 
     // Get PERMIT_TYPEHASH from token contract
     const PERMIT_TYPEHASH = await tokenContract.PERMIT_TYPEHASH();
+    console.log("TOKEN CONTRACT", tokenContract);
 
     // Return the input parameters plus contract info and token details
     return NextResponse.json({

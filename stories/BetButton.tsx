@@ -4,7 +4,7 @@ import { useEmbeddedWallet } from "@/components/EmbeddedWalletProvider";
 import { useTokenContext } from "@/components/TokenContext";
 import { useUsdcBalance } from "@/components/useUsdcBalance";
 import { placeBet, PlaceBetResult, topUpUsdcBalance } from "@/lib/betting";
-import { MAX_OPTIONS, optionColor, OptionColorClasses } from "@/lib/config";
+import { DEFAULT_CHAIN_ID, MAX_OPTIONS, optionColor, OptionColorClasses } from "@/lib/config";
 import { cn, parseChainId, usdcAmountToDollars } from "@/lib/utils";
 import { useLogin, usePrivy } from "@privy-io/react-auth";
 import { useState } from "react";
@@ -50,7 +50,7 @@ export const BetButton = ({
     onComplete: async ({ user }) => {
       console.log("login complete", embeddedWallet, user);
       const result = await topUpUsdcBalance({
-        chainId: parseChainId("534351"),
+        chainId: DEFAULT_CHAIN_ID,
         walletAddress: user.wallet?.address || "",
       });
 
@@ -119,40 +119,6 @@ export const BetButton = ({
 
   const potentialEarnings = calculateEarnings();
 
-  /**
-   * Removes trailing zeros from a hex string while ensuring it maintains a valid hex representation
-   * with an even number of digits (required for proper hex encoding)
-   * @param hexString - The hex string to process (e.g., "0x8000", "0x8300")
-   * @returns The processed hex string (e.g., "0x80", "0x83")
-   */
-  const removeTrailingZeros = (hexString: string): string => {
-    // If not a hex string or too short, return as is
-    if (!hexString.startsWith("0x") || hexString.length <= 2) {
-      return hexString;
-    }
-
-    // Remove "0x" prefix for processing
-    let hex = hexString.slice(2);
-
-    // Remove trailing zeros
-    while (hex.length > 0 && hex.endsWith("0")) {
-      hex = hex.slice(0, -1);
-    }
-
-    // If we've removed all digits, return "0x0"
-    if (hex.length === 0) {
-      return "0x0";
-    }
-
-    // Ensure even number of digits (required for valid hex encoding)
-    if (hex.length % 2 !== 0) {
-      hex = hex + "0";
-    }
-
-    // Add "0x" prefix back
-    return "0x" + hex;
-  };
-
   const handleClick = async () => {
     if (isLoading) return;
     if (!embeddedWallet || !authenticated) {
@@ -165,20 +131,11 @@ export const BetButton = ({
     try {
       setIsLoading(true);
 
-      // Process poolId to remove trailing zeros while maintaining valid hex format
-      const processedPoolId = removeTrailingZeros(poolId);
-      console.log(
-        "Original poolId:",
-        poolId,
-        "Processed poolId:",
-        processedPoolId
-      );
-
       // Use the placeBet function from our betting library
       const txResult: PlaceBetResult = await placeBet(
         embeddedWallet,
         chainId,
-        processedPoolId,
+        poolId,
         optionIndex,
         amount,
         tokenType

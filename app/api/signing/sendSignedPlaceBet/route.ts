@@ -1,4 +1,3 @@
-import BetPointsAbi from "@/contracts/out/BetPoints.sol/BetPoints.json"; //SWAP TO CONTRACT TYPES
 import { TokenType } from "@/lib/__generated__/graphql";
 import { CHAIN_CONFIG } from "@/lib/config";
 import { ethers, parseUnits } from "ethers";
@@ -60,18 +59,6 @@ export async function POST(request: Request) {
     }
     const wallet = new ethers.Wallet(privateKey, provider);
 
-    // Get the token address based on token type
-    const tokenAddress =
-      tokenType === TokenType.Usdc
-        ? chainConfig.usdcAddress
-        : chainConfig.pointsAddress;
-
-    const tokenContract = new ethers.Contract(
-      tokenAddress,
-      BetPointsAbi.abi,
-      wallet
-    );
-
     // Create contract instance
     const contract = new ethers.Contract(
       chainConfig.appAddress,
@@ -100,10 +87,9 @@ export async function POST(request: Request) {
     });
 
     // convert pool ID from hex to number
-    const poolId = parseInt(body.poolId, 16);
 
     console.log("Data to call TX:", {
-      poolId,
+      poolId: BigInt(body.poolId),
       optionIndex: body.optionIndex,
       amount: BigInt(body.amount),
       walletAddress: body.walletAddress,
@@ -117,7 +103,7 @@ export async function POST(request: Request) {
 
     // Call placeBet
     const tx = await contract.placeBet(
-      poolId,
+      BigInt(body.poolId),
       body.optionIndex,
       BigInt(body.amount),
       body.walletAddress,

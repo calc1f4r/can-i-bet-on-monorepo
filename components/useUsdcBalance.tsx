@@ -1,5 +1,4 @@
-
-import BetPointsAbi from "@/contracts/out/BetPoints.sol/BetPoints.json"; //SWAP TO CONTRACT TYPES
+import { betPointsAbi } from "@/lib/contract.types";
 import { USDC_DECIMALS } from "@/lib/utils";
 import { useWallets } from "@privy-io/react-auth";
 import { ethers } from "ethers";
@@ -66,7 +65,7 @@ export const useUsdcBalance = () => {
       // Create contract instance
       const usdcContract = new ethers.Contract(
         chainConfig.usdcAddress,
-        BetPointsAbi.abi,
+        betPointsAbi,
         ethersProvider
       );
 
