@@ -3,7 +3,7 @@
 import { useEmbeddedWallet } from "@/components/EmbeddedWalletProvider";
 import { useTokenContext } from "@/components/TokenContext";
 import { useUsdcBalance } from "@/components/useUsdcBalance";
-import { placeBet, topUpUsdcBalance } from "@/lib/betting";
+import { placeBet, PlaceBetResult, topUpUsdcBalance } from "@/lib/betting";
 import { MAX_OPTIONS, optionColor, OptionColorClasses } from "@/lib/config";
 import { cn, parseChainId, usdcAmountToDollars } from "@/lib/utils";
 import { useLogin, usePrivy } from "@privy-io/react-auth";
@@ -175,7 +175,7 @@ export const BetButton = ({
       );
 
       // Use the placeBet function from our betting library
-      const txResult = await placeBet(
+      const txResult: PlaceBetResult = await placeBet(
         embeddedWallet,
         chainId,
         processedPoolId,
@@ -183,39 +183,55 @@ export const BetButton = ({
         amount,
         tokenType
       );
+
       console.log("txResult on placeBet", txResult);
+
+      // Check if transaction was successful
+      if (!txResult || !txResult.success) {
+        // Show detailed error message with transaction hash for debugging
+        let errorMessage = txResult?.error || "Transaction failed";
+        if (txResult?.transactionHash) {
+          // If we have a transaction hash, we can add it to the error
+          errorMessage += ` (tx: ${txResult.transactionHash})`;
+        }
+        throw new Error(errorMessage);
+      }
 
       // Format the amount properly using the usdcAmountToDollars function
       const formattedAmount = usdcAmountToDollars(amount);
 
+      // Format success message
+      let successDescription;
       // Determine if the prefix is a string or an image
       const prefix = chainConfig?.usdcPrefix;
 
       // If it's a simple string prefix, we can use a template string
       if (typeof prefix === "string") {
-        const toastDescription = `Your bet of ${prefix}${formattedAmount} has been placed on "${option}"`;
-        toast.success("Transaction submitted successfully!", {
-          description: toastDescription,
-          duration: 5000,
-        });
+        successDescription = `Your bet of ${prefix}${formattedAmount} has been placed on "${option}"`;
       } else {
         // If it's an image, we need to use JSX
-        toast.success("Transaction submitted successfully!", {
-          description: (
-            <div className="flex flex-wrap items-center">
-              <span>Your bet of </span>
-              {tokenLogo}
-              <span className="mx-0.5">{formattedAmount}</span>
-              <span> has been placed on &quot;{option}&quot;</span>
-            </div>
-          ),
-          duration: 5000,
-        });
+        successDescription = (
+          <div className="flex flex-wrap items-center">
+            <span>Your bet of </span>
+            {tokenLogo}
+            <span className="mx-0.5">{formattedAmount}</span>
+            <span> has been placed on &quot;{option}&quot;</span>
+          </div>
+        );
       }
+
+      // Show success toast
+      toast.success("Transaction confirmed!", {
+        description: successDescription,
+        duration: 5000,
+      });
     } catch (error) {
       console.error("Error processing bet:", error);
-      toast.error(`Error placing bet`, {
-        description: error instanceof Error ? error.message : String(error),
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
+
+      toast.error(`Failed to place bet`, {
+        description: errorMessage,
         duration: 5000,
       });
     } finally {

@@ -134,11 +134,44 @@ export async function POST(request: Request) {
 
     console.log("Transaction sent:", tx.hash);
 
-    // Don't wait for confirmations, just get the response
-    return NextResponse.json({
-      success: true,
-      transactionHash: tx.hash,
-    });
+    // Wait for the transaction to be mined with 1 confirmation
+    try {
+      const receipt = await tx.wait(1);
+
+      // Check if transaction was successful
+      if (receipt && receipt.status === 1) {
+        return NextResponse.json({
+          success: true,
+          transactionHash: tx.hash,
+          receipt: {
+            blockNumber: receipt.blockNumber,
+            blockHash: receipt.blockHash,
+            status: receipt.status,
+          },
+        });
+      } else {
+        return NextResponse.json({
+          success: false,
+          transactionHash: tx.hash,
+          error: "Transaction failed on-chain",
+          receipt: {
+            blockNumber: receipt?.blockNumber,
+            blockHash: receipt?.blockHash,
+            status: receipt?.status,
+          },
+        });
+      }
+    } catch (waitError) {
+      // Transaction was reverted or failed
+      console.error("Transaction failed:", waitError);
+      return NextResponse.json({
+        success: false,
+        transactionHash: tx.hash,
+        error: `Transaction reverted: ${
+          waitError instanceof Error ? waitError.message : String(waitError)
+        }`,
+      });
+    }
   } catch (error) {
     console.error("Error in sendSignedPlaceBet:", error);
     return NextResponse.json(

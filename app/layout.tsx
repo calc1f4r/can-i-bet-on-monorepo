@@ -7,6 +7,7 @@ import { BottomNav } from "@/stories/BottomNav";
 import { Navbar } from "@/stories/Navbar";
 import { ApolloClient, ApolloProvider, InMemoryCache } from "@apollo/client";
 import { loadDevMessages, loadErrorMessages } from "@apollo/client/dev";
+import { Analytics } from "@vercel/analytics/react";
 import { Geist, Geist_Mono } from "next/font/google";
 import { usePathname } from "next/navigation";
 import "./globals.css";
@@ -69,6 +70,7 @@ export default function RootLayout({
           </PrivyProviderWrapper>
         </ThemeProvider>
       </body>
+      <Analytics />
     </html>
   );
 }

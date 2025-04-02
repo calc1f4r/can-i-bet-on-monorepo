@@ -62,6 +62,20 @@ export interface Wallet {
 }
 
 /**
+ * Interface for the response from sendSignedBet
+ */
+export interface PlaceBetResult {
+  success: boolean;
+  transactionHash?: string;
+  error?: string;
+  receipt?: {
+    blockNumber: number;
+    blockHash: string;
+    status: number;
+  };
+}
+
+/**
  * Fetches the signing properties needed for the bet
  */
 export const getSigningProps = async (params: SigningParams) => {
@@ -205,7 +219,7 @@ export const placeBet = async (
   optionIndex: number,
   amount: string,
   tokenType: TokenType = TokenType.Usdc // Default to USDC for backward compatibility
-) => {
+): Promise<PlaceBetResult> => {
   console.log("placing bet", poolId, optionIndex, amount, tokenType);
   if (!embeddedWallet?.getEthereumProvider) {
     throw new Error("Wallet does not support Ethereum provider");
@@ -215,6 +229,7 @@ export const placeBet = async (
   if (!chainConfig) {
     throw new Error(`Chain configuration not found for chainId: ${chainId}`);
   }
+  console.log("chainConfig", chainConfig);
 
   // Get signing parameters
   const signingParams = {
@@ -271,7 +286,9 @@ export const placeBet = async (
 /**
  * Sends the signed bet transaction to the backend
  */
-export const sendSignedBet = async (signedData: SignedBetData) => {
+export const sendSignedBet = async (
+  signedData: SignedBetData
+): Promise<PlaceBetResult> => {
   console.log("Sending signed transaction:", signedData);
 
   const txResponse = await fetch("/api/signing/sendSignedPlaceBet", {
