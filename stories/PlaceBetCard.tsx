@@ -15,7 +15,6 @@ import {
   PoolStatus,
 } from "@/lib/__generated__/graphql";
 import { optionColor, optionColorClasses } from "@/lib/config";
-import { renderUsdcPrefix } from "@/lib/usdcUtils";
 import {
   FrontendPoolStatus,
   getFrontendPoolStatus,
@@ -169,9 +168,10 @@ const calculateTotalsByOption = (bets: GetBetsQuery["bets"]) => {
 
 export const PlaceBetCard = ({ pool, loading }: PlaceBetCardProps) => {
   const { usdcBalance, error: usdcBalanceError } = useUsdcBalance();
+
   const { embeddedWallet, chainConfig, currentChainId } = useEmbeddedWallet();
   const { ready, wallets } = useWallets();
-  const { tokenType } = useTokenContext();
+  const { tokenType, tokenLogo } = useTokenContext();
 
   // Fetch user bets for this pool
   const { userBets, loading: loadingBets } = useUserBets(
@@ -276,7 +276,7 @@ export const PlaceBetCard = ({ pool, loading }: PlaceBetCardProps) => {
 
             <div className="relative">
               <span className="absolute left-6 top-1/2 -translate-y-1/2 text-gray-400 text-xl flex items-center gap-1">
-                {renderUsdcPrefix(chainConfig)}
+                {tokenLogo}
               </span>
               <input
                 id="betAmount"
@@ -307,7 +307,7 @@ export const PlaceBetCard = ({ pool, loading }: PlaceBetCardProps) => {
                 <span className="text-xs text-gray-400 mt-1 flex items-center">
                   Balance:{" "}
                   <span className="flex items-center gap-1">
-                    {renderUsdcPrefix(chainConfig)}
+                    {tokenLogo}
                     {(() => {
                       return usdcBalance
                         ? Number(usdcBalance).toLocaleString()

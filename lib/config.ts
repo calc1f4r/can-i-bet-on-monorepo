@@ -4,7 +4,7 @@ import { baseSepolia, Chain } from "viem/chains";
 
 export type ChainConfig = {
   chain: Chain;
-  applicationContractAddress: `0x${string}`;
+  appAddress: `0x${string}`;
   iconUrl: string;
   backgroundColor: string;
   usdcAddress: `0x${string}`;
@@ -20,11 +20,11 @@ export type ChainConfig = {
 export const CHAIN_CONFIG: Record<string, ChainConfig> = {
   [baseSepolia.id]: {
     chain: baseSepolia,
-    applicationContractAddress: "0xeb6AF2A4d7591C81A10114E8EB2b9b45f1bee60D",
+    appAddress: "0x75F788D02a0D63b9B8454A61f4c32f6cf4f533f9",
     iconUrl: baseSepoliaIcon,
     backgroundColor: "#FFF",
     usdcAddress: "0x036CbD53842c5426634e7929541eC2318f3dCF7e",
-    pointsAddress: "0x30b9741a32E8D621862CDd61224f1945EE2030Df",
+    pointsAddress: "0xC6898dbD7F9306Ddabc7850584534EF798C7Ceb2",
     nativeCurrency: {
       symbol: "ETH",
     },

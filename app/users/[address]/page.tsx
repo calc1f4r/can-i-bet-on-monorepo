@@ -3,6 +3,7 @@
 import { GET_BETS } from "@/app/queries";
 import { useEmbeddedWallet } from "@/components/EmbeddedWalletProvider";
 import { PrivyLoginButton } from "@/components/PrivyLoginButton";
+import { useTokenContext } from "@/components/TokenContext";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useUsdcBalance } from "@/components/useUsdcBalance";
@@ -11,7 +12,6 @@ import {
   GetBetsQuery,
   OrderDirection,
 } from "@/lib/__generated__/graphql";
-import { renderUsdcPrefix } from "@/lib/usdcUtils";
 import { ActivityLine } from "@/stories/ActivityLine";
 import { PlayerAddressChip } from "@/stories/PlayerAddressChip";
 import { useQuery } from "@apollo/client";
@@ -129,7 +129,7 @@ const UserProfile: FC<UserProfileProps> = ({
   isSelf,
   tokenBalance,
 }) => {
-  const { chainConfig } = useEmbeddedWallet();
+  const { tokenLogo } = useTokenContext();
 
   return (
     <Card className="shadow-lg">
@@ -150,7 +150,7 @@ const UserProfile: FC<UserProfileProps> = ({
           <div className="text-sm">
             <span className="text-gray-400">Balance: </span>
             <span className="font-mono flex items-center">
-              {renderUsdcPrefix(chainConfig)}
+              {tokenLogo}
               {parseFloat(tokenBalance || "0").toFixed(2)}
             </span>
           </div>

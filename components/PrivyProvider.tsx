@@ -1,7 +1,17 @@
 "use client";
 import { PrivyProvider } from "@privy-io/react-auth";
 import { baseSepolia } from "viem/chains";
+import { createConfig, http, WagmiProvider } from "wagmi";
 import { EmbeddedWalletProvider } from "./EmbeddedWalletProvider";
+
+// Create a Wagmi config - ensure we're importing createConfig from @privy-io/wagmi
+const wagmiConfig = createConfig({
+  chains: [baseSepolia], //Make sure this matches SupportedNetworks from common/consts
+  transports: {
+    //The first chain that appears below is the default chain
+    [baseSepolia.id]: http(),
+  },
+});
 
 export default function PrivyProviderWrapper({
   children,
@@ -27,7 +37,9 @@ export default function PrivyProviderWrapper({
         },
       }}
     >
-      <EmbeddedWalletProvider>{children}</EmbeddedWalletProvider>
+      <WagmiProvider config={wagmiConfig}>
+        <EmbeddedWalletProvider>{children}</EmbeddedWalletProvider>
+      </WagmiProvider>
     </PrivyProvider>
   );
 }

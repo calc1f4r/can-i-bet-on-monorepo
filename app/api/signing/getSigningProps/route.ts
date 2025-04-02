@@ -1,7 +1,9 @@
 import BetPointsAbi from "@/contracts/out/BetPoints.sol/BetPoints.json"; //SWAP TO CONTRACT TYPES
+import { TokenType } from "@/lib/__generated__/graphql";
 import { CHAIN_CONFIG } from "@/lib/config";
 import { ethers, ZeroAddress } from "ethers";
 import { NextResponse } from "next/server";
+import { baseSepolia } from "viem/chains";
 
 // Define the expected request type
 type GenerateSigningPropsRequest = {
@@ -10,39 +12,49 @@ type GenerateSigningPropsRequest = {
   optionIndex: number;
   amount: string;
   userWalletAddress: string;
+  tokenType: TokenType;
 };
 
 const PRIVATE_CHAIN_CONFIG: {
   [key: keyof typeof CHAIN_CONFIG]: { rpcUrl: string };
 } = {
   // Using the same config as in sendSignedPlaceBet
-  "534351": {
-    rpcUrl: process.env.SCROLL_SEPOLIA_RPC_URL || "",
-  },
-  "534352": {
-    rpcUrl: process.env.SCROLL_RPC_URL || "",
+  [baseSepolia.id]: {
+    rpcUrl: process.env.BASE_SEPOLIA_RPC_URL || "",
   },
 };
 
 export async function POST(request: Request) {
   try {
     const body: GenerateSigningPropsRequest = await request.json();
+    const { tokenType = TokenType.Usdc } = body; // Default to USDC if not specified
 
     // Validate chain configuration
     const chainConfig = CHAIN_CONFIG[body.chainId];
     if (!chainConfig) {
+      console.error("Invalid chainId, no public config");
       return NextResponse.json(
         { error: "Invalid chainId, no public config" },
         { status: 400 }
       );
     }
+
+    // Get the token address based on token type
+    const tokenAddress =
+      tokenType === TokenType.Usdc
+        ? chainConfig.usdcAddress
+        : chainConfig.pointsAddress;
+
     if (
-      chainConfig.usdcAddress === ZeroAddress ||
-      chainConfig.applicationContractAddress === ZeroAddress
+      tokenAddress === ZeroAddress ||
+      chainConfig.appAddress === ZeroAddress
     ) {
+      console.error(
+        `Invalid chainId, no ${tokenType.toLowerCase()} and/or application contract address`
+      );
       return NextResponse.json(
         {
-          error: "Invalid chainId, no usdc and/or application contract address",
+          error: `Invalid chainId, no ${tokenType.toLowerCase()} and/or application contract address`,
         },
         { status: 400 }
       );
@@ -50,6 +62,7 @@ export async function POST(request: Request) {
 
     const privateConfig = PRIVATE_CHAIN_CONFIG[body.chainId];
     if (!privateConfig) {
+      console.error("Invalid chainId, no private rpc url");
       return NextResponse.json(
         { error: "Invalid chainId, no private rpc url" },
         { status: 400 }
@@ -59,29 +72,30 @@ export async function POST(request: Request) {
     // Setup provider and contracts
     const provider = new ethers.JsonRpcProvider(privateConfig.rpcUrl);
     const wallet = new ethers.Wallet(process.env.MAIN_PRIVATE_KEY!, provider);
-    const usdcContract = new ethers.Contract(
-      chainConfig.usdcAddress,
+    const tokenContract = new ethers.Contract(
+      tokenAddress,
       BetPointsAbi.abi,
       wallet
     );
 
-    // await usdcContract.mint(body.userWalletAddress, body.amount);
+    // await tokenContract.mint(body.userWalletAddress, body.amount);
 
-    // Get USDC nonce for the user
-    const nonce = await usdcContract.nonces(body.userWalletAddress);
+    // Get token nonce for the user
+    const nonce = await tokenContract.nonces(body.userWalletAddress);
 
-    // Get PERMIT_TYPEHASH from USDC contract
-    const PERMIT_TYPEHASH = await usdcContract.PERMIT_TYPEHASH();
+    // Get PERMIT_TYPEHASH from token contract
+    const PERMIT_TYPEHASH = await tokenContract.PERMIT_TYPEHASH();
 
-    // Return the input parameters plus contract info and USDC details
+    // Return the input parameters plus contract info and token details
     return NextResponse.json({
       ...body,
-      applicationContractAddress: chainConfig.applicationContractAddress,
-      usdcContractAddress: chainConfig.usdcAddress,
-      usdcNonce: nonce.toString(),
-      usdcPermitTypehash: PERMIT_TYPEHASH,
+      applicationContractAddress: chainConfig.appAddress,
+      tokenContractAddress: tokenAddress,
+      tokenNonce: nonce.toString(),
+      tokenPermitTypehash: PERMIT_TYPEHASH,
       rpcUrl: privateConfig.rpcUrl,
-      usdcName: await usdcContract.name(),
+      tokenName: await tokenContract.name(),
+      tokenType,
     });
   } catch (error) {
     console.error("Error in generateSigningProps:", error);

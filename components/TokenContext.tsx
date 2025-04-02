@@ -37,7 +37,7 @@ export const TOKEN_SYMBOLS: Record<
     logo: (
       <Image
         src={usdpLogo}
-        alt="POINTS"
+        alt="BET"
         width={16}
         height={16}
         style={{ display: "inline" }}
@@ -68,9 +68,9 @@ const TokenContext = createContext<TokenContextType>({
 
 export const TokenProvider = ({ children }: { children: React.ReactNode }) => {
   const { usdcAddress, pointsAddress } = useNetwork();
+  
   const [tokenType, setTokenType] = useState<TokenType>(TokenType.Usdc);
 
-  // Get token information
   const {
     symbol: tokenSymbol,
     logo: tokenLogo,

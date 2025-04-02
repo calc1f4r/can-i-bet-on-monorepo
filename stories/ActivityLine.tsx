@@ -1,13 +1,13 @@
 import { useEmbeddedWallet } from "@/components/EmbeddedWalletProvider";
 import { GetBetsQuery } from "@/lib/__generated__/graphql";
 import { optionColor } from "@/lib/config";
-import { renderUsdcPrefix } from "@/lib/usdcUtils";
 import { USDC_DECIMALS } from "@/lib/utils";
 import { formatDistanceToNow } from "date-fns";
 import Link from "next/link";
 import { FC, memo, useMemo } from "react";
 import Jazzicon, { jsNumberForAddress } from "react-jazzicon";
 import { PlayerAddressChip } from "./PlayerAddressChip";
+import { useTokenContext } from "@/components/TokenContext";
 
 export type ActivityLineProps = {
   bet: GetBetsQuery["bets"][0];
@@ -35,7 +35,7 @@ const ActivityLineComponent: FC<ActivityLineProps> = ({
   showPoolImage = true,
   showSeparator = true,
 }) => {
-  const { chainConfig } = useEmbeddedWallet();
+  const { tokenLogo } = useTokenContext();
   const poolSlug = bet.pool.id.toString();
   const timestamp = new Date(Number(bet.blockTimestamp) * 1000);
   const optionIdx = Number(bet.optionIndex);
@@ -136,7 +136,7 @@ const ActivityLineComponent: FC<ActivityLineProps> = ({
                 <span className="sm:hidden inline-flex items-center">
                   bet{" "}
                   <span className="flex items-center gap-1 mx-1">
-                    {renderUsdcPrefix(chainConfig)}
+                    {tokenLogo}
                     {compactBetAmount}
                   </span>{" "}
                   on
@@ -144,7 +144,7 @@ const ActivityLineComponent: FC<ActivityLineProps> = ({
                 <span className="hidden sm:inline-flex items-center">
                   bet{" "}
                   <span className="flex items-center gap-1 mx-1">
-                    {renderUsdcPrefix(chainConfig)}
+                    {tokenLogo}
                     {formattedBetAmount}
                   </span>{" "}
                   on

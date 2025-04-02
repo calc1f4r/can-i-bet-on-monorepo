@@ -1,6 +1,7 @@
 "use client";
 
 import { GET_BETS } from "@/app/queries";
+import { useTokenContext } from "@/components/TokenContext";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -9,7 +10,6 @@ import {
   OrderDirection,
 } from "@/lib/__generated__/graphql";
 import { ChainConfig } from "@/lib/config";
-import { renderUsdcPrefix } from "@/lib/usdcUtils";
 import { useQuery } from "@apollo/client";
 import { FC, useEffect, useState } from "react";
 import { ActivityLine } from "./ActivityLine";
@@ -76,8 +76,9 @@ const UserProfile: FC<UserProfileProps> = ({
   address,
   isSelf,
   tokenBalance,
-  chainConfig,
 }) => {
+  const { tokenLogo } = useTokenContext();
+
   return (
     <Card className="shadow-lg">
       <CardHeader>
@@ -97,7 +98,7 @@ const UserProfile: FC<UserProfileProps> = ({
           <div className="text-sm">
             <span className="text-gray-400">Balance: </span>
             <span className="font-mono flex items-center">
-              {renderUsdcPrefix(chainConfig)}
+              {tokenLogo}
               {parseFloat(tokenBalance || "0").toFixed(2)}
             </span>
           </div>

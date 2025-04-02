@@ -1,10 +1,10 @@
 "use client";
 //TODO Doesn't support Option A or B, hardcoded to Yes and No
 import { useEmbeddedWallet } from "@/components/EmbeddedWalletProvider";
+import { useTokenContext } from "@/components/TokenContext";
 import { useUsdcBalance } from "@/components/useUsdcBalance";
 import { placeBet, topUpUsdcBalance } from "@/lib/betting";
 import { MAX_OPTIONS, optionColor, OptionColorClasses } from "@/lib/config";
-import { renderUsdcPrefix } from "@/lib/usdcUtils";
 import { cn, parseChainId, usdcAmountToDollars } from "@/lib/utils";
 import { useLogin, usePrivy } from "@privy-io/react-auth";
 import { useState } from "react";
@@ -39,6 +39,7 @@ export const BetButton = ({
   totalBetsByOption = [],
   totalBets = "0",
 }: BetButtonProps) => {
+  const { tokenLogo, tokenType } = useTokenContext();
   const [isLoading, setIsLoading] = useState(false);
   const { authenticated } = usePrivy();
   const { chainConfig } = useEmbeddedWallet();
@@ -49,7 +50,7 @@ export const BetButton = ({
     onComplete: async ({ user }) => {
       console.log("login complete", embeddedWallet, user);
       const result = await topUpUsdcBalance({
-        chainId: parseChainId("534351"), 
+        chainId: parseChainId("534351"),
         walletAddress: user.wallet?.address || "",
       });
 
@@ -179,7 +180,8 @@ export const BetButton = ({
         chainId,
         processedPoolId,
         optionIndex,
-        amount
+        amount,
+        tokenType
       );
       console.log("txResult on placeBet", txResult);
 
@@ -202,7 +204,7 @@ export const BetButton = ({
           description: (
             <div className="flex flex-wrap items-center">
               <span>Your bet of </span>
-              {renderUsdcPrefix(chainConfig, false)}
+              {tokenLogo}
               <span className="mx-0.5">{formattedAmount}</span>
               <span> has been placed on &quot;{option}&quot;</span>
             </div>
@@ -288,7 +290,7 @@ export const BetButton = ({
               className={`text-lg font-medium w-full text-center flex items-center justify-center`}
             >
               <span className="flex items-center gap-1">
-                {renderUsdcPrefix(chainConfig, true)}
+                {tokenLogo}
                 {usdcAmountToDollars(potentialEarnings)}
               </span>
             </span>

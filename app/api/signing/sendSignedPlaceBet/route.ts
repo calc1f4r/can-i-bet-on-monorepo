@@ -1,4 +1,5 @@
 import BetPointsAbi from "@/contracts/out/BetPoints.sol/BetPoints.json"; //SWAP TO CONTRACT TYPES
+import { TokenType } from "@/lib/__generated__/graphql";
 import { CHAIN_CONFIG } from "@/lib/config";
 import { ethers, parseUnits } from "ethers";
 import { NextResponse } from "next/server";
@@ -10,6 +11,7 @@ type PlaceBetRequest = {
   optionIndex: number;
   amount: string;
   walletAddress: string;
+  tokenType: TokenType;
   permitSignature: {
     v: number;
     r: string;
@@ -32,6 +34,8 @@ export async function POST(request: Request) {
   try {
     console.log("Received request:", request);
     const body: PlaceBetRequest = await request.json();
+    const { tokenType = TokenType.Usdc } = body; // Default to USDC if not specified
+
     const chainConfig = CHAIN_CONFIG[body.chainId];
     if (!chainConfig) {
       return NextResponse.json(
@@ -56,24 +60,26 @@ export async function POST(request: Request) {
     }
     const wallet = new ethers.Wallet(privateKey, provider);
 
-    const usdcContract = new ethers.Contract(
-      chainConfig.usdcAddress,
+    // Get the token address based on token type
+    const tokenAddress =
+      tokenType === TokenType.Usdc
+        ? chainConfig.usdcAddress
+        : chainConfig.pointsAddress;
+
+    const tokenContract = new ethers.Contract(
+      tokenAddress,
       BetPointsAbi.abi,
       wallet
     );
 
-    // console.log("Mi6nting USDC to the user", body.walletAddress, body.amount);
-    // await usdcContract.mint(body.walletAddress, BigInt(body.amount));
-    // console.log("Minted USDC to the user", body.walletAddress, body.amount);
-
     // Create contract instance
     const contract = new ethers.Contract(
-      chainConfig.applicationContractAddress,
+      chainConfig.appAddress,
       BettingPoolsAbi.abi,
       wallet
     );
 
-    console.log("Contract address:", chainConfig.applicationContractAddress);
+    console.log("Contract address:", chainConfig.appAddress);
     console.log("Wallet address:", wallet.address);
 
     // Format permit signature
@@ -88,6 +94,7 @@ export async function POST(request: Request) {
       optionIndex: body.optionIndex,
       amount: body.amount,
       walletAddress: body.walletAddress,
+      tokenType: body.tokenType,
       permitDeadline: body.usdcPermitDeadline,
       permitSignature: permitSig,
     });
@@ -100,9 +107,13 @@ export async function POST(request: Request) {
       optionIndex: body.optionIndex,
       amount: BigInt(body.amount),
       walletAddress: body.walletAddress,
+      tokenType: body.tokenType,
       permitDeadline: body.usdcPermitDeadline,
       permitSignature: permitSig,
     });
+
+    // Map TokenType enum from GraphQL to the contract's TokenType enum (0 for USDC, 1 for POINTS)
+    const contractTokenType = tokenType === TokenType.Usdc ? 0 : 1;
 
     // Call placeBet
     const tx = await contract.placeBet(
@@ -110,6 +121,7 @@ export async function POST(request: Request) {
       body.optionIndex,
       BigInt(body.amount),
       body.walletAddress,
+      contractTokenType, // Add tokenType parameter
       body.usdcPermitDeadline,
       permitSig,
       {

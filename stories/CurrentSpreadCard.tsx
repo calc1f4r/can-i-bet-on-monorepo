@@ -6,7 +6,6 @@ import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import { GetPoolQuery } from "@/lib/__generated__/graphql";
 import { optionColor, optionColorClasses } from "@/lib/config";
-import { renderUsdcPrefix } from "@/lib/usdcUtils";
 import {
   FrontendPoolStatus,
   getFrontendPoolStatus,
@@ -17,6 +16,7 @@ import {
 import { useQuery } from "@apollo/client";
 import { FC } from "react";
 import { RatioBar } from "./RatioBar";
+
 
 interface CurrentSpreadCardProps {
   poolId?: string;
@@ -50,7 +50,7 @@ export const CurrentSpreadCard: FC<CurrentSpreadCardProps> = ({
   cardClassName = "w-full max-w-md mx-auto",
   showTotalBets = true,
 }) => {
-  const { tokenType } = useTokenContext();
+  const { tokenType, tokenLogo } = useTokenContext();
   const { chainConfig } = useEmbeddedWallet();
   const {
     data,
@@ -140,7 +140,7 @@ export const CurrentSpreadCard: FC<CurrentSpreadCardProps> = ({
                   {option}
                 </div>
                 <div className="text-lg font-semibold ml-auto flex items-center gap-1">
-                  {renderUsdcPrefix(chainConfig)}
+                  {tokenLogo}
                   {usdcAmountToDollars(
                     getTotalBetsForOption(pool, tokenType, index) || 0
                   )}
@@ -155,7 +155,7 @@ export const CurrentSpreadCard: FC<CurrentSpreadCardProps> = ({
               <div className="flex mt-2">
                 <div className="text-lg text-white font-bold">Total bets</div>
                 <div className="text-lg text-white font-semibold ml-auto flex items-center gap-1">
-                  {renderUsdcPrefix(chainConfig)}
+                  {tokenLogo}
                   {usdcAmountToDollars(totalBets || 0)}
                 </div>
               </div>

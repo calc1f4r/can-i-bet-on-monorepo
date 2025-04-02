@@ -20,7 +20,6 @@ import {
 } from "@/components/ui/tooltip";
 import { useUsdcBalance } from "@/components/useUsdcBalance";
 import { TokenType } from "@/lib/__generated__/graphql";
-import { renderUsdcPrefix } from "@/lib/usdcUtils";
 import PromptbetLogo from "@/stories/assets/CanIBetOn Logo.jpg";
 import { usePrivy } from "@privy-io/react-auth";
 import { AlertCircle, Menu } from "lucide-react";
@@ -73,7 +72,7 @@ export const Navbar = () => {
                   <div className="flex-col text-sm font-medium min-w-20 text-center border rounded-full relative">
                     <div className="text-xs text-gray-500">Balance</div>
                     <div className="flex items-center justify-center gap-1">
-                      {renderUsdcPrefix(chainConfig)}
+                      {tokenLogo}
                       {parseFloat(usdcBalance || "0").toLocaleString()}
                     </div>
                     {error && (
@@ -116,7 +115,7 @@ export const Navbar = () => {
                   <div className="flex-col text-sm font-medium min-w-24 text-center border rounded-full relative">
                     <div className="text-xs text-gray-500">Balance</div>
                     <div className="flex items-center justify-center gap-1">
-                      {renderUsdcPrefix(chainConfig)}
+                      {tokenLogo}
                       {parseFloat(usdcBalance || "0").toLocaleString()}
                     </div>
                     {error && (

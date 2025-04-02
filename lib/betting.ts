@@ -2,6 +2,7 @@ import {
   TopUpUsdcBalanceParams,
   TopUpUsdcBalanceResponse,
 } from "@/app/api/signing/mintTestnetUsdc/route";
+import { TokenType } from "@/lib/__generated__/graphql";
 import { ethers } from "ethers";
 import { CHAIN_CONFIG } from "./config";
 import { showSuccessToast } from "./toast";
@@ -15,6 +16,7 @@ export interface SigningParams {
   optionIndex: number;
   amount: string;
   userWalletAddress: string;
+  tokenType?: TokenType; // Optional for backward compatibility
 }
 
 /**
@@ -26,6 +28,7 @@ export interface SignedBetData {
   optionIndex: number;
   amount: string;
   walletAddress: string;
+  tokenType: TokenType;
   permitSignature: {
     v: number;
     r: string;
@@ -122,26 +125,26 @@ export const topUpUsdcBalance = async (
 };
 
 /**
- * Signs a USDC permit using EIP-712
+ * Signs a token permit using EIP-712
  */
-export const signUsdcPermit = async (
+export const signTokenPermit = async (
   provider: EthereumProvider,
   walletAddress: string,
   chainId: string | number,
-  usdcAddress: string,
+  tokenAddress: string,
   spenderAddress: string,
   amount: string,
-  usdcNonce: number,
-  usdcName: string
+  tokenNonce: number,
+  tokenName: string
 ) => {
-  const usdcPermitDeadline = Math.floor(Date.now() / 1000) + 3600; // 1 hour from now
+  const permitDeadline = Math.floor(Date.now() / 1000) + 3600; // 1 hour from now
 
   // Verify the domain separator matches the contract
   const domainData = {
-    name: usdcName,
+    name: tokenName,
     version: "1",
     chainId: Number(chainId),
-    verifyingContract: usdcAddress,
+    verifyingContract: tokenAddress,
   };
 
   // EIP-2612 standard types for permit
@@ -159,8 +162,8 @@ export const signUsdcPermit = async (
     owner: walletAddress,
     spender: spenderAddress,
     value: amount,
-    nonce: usdcNonce,
-    deadline: usdcPermitDeadline,
+    nonce: tokenNonce,
+    deadline: permitDeadline,
   };
 
   console.log("Permit data to sign:", {
@@ -188,8 +191,81 @@ export const signUsdcPermit = async (
 
   return {
     signature: sig,
-    deadline: usdcPermitDeadline,
+    deadline: permitDeadline,
   };
+};
+
+/**
+ * Places a bet using the provided wallet and parameters
+ */
+export const placeBet = async (
+  embeddedWallet: Wallet,
+  chainId: string | number,
+  poolId: string,
+  optionIndex: number,
+  amount: string,
+  tokenType: TokenType = TokenType.Usdc // Default to USDC for backward compatibility
+) => {
+  console.log("placing bet", poolId, optionIndex, amount, tokenType);
+  if (!embeddedWallet?.getEthereumProvider) {
+    throw new Error("Wallet does not support Ethereum provider");
+  }
+
+  const chainConfig = CHAIN_CONFIG[chainId];
+  if (!chainConfig) {
+    throw new Error(`Chain configuration not found for chainId: ${chainId}`);
+  }
+
+  // Get signing parameters
+  const signingParams = {
+    chainId,
+    poolId,
+    optionIndex,
+    amount,
+    userWalletAddress: embeddedWallet.address,
+    tokenType,
+  };
+
+  const signingData = await getSigningProps(signingParams);
+
+  // Get Ethereum provider
+  const provider = await embeddedWallet.getEthereumProvider();
+
+  // Determine token address based on token type
+  const tokenAddress =
+    tokenType === TokenType.Usdc
+      ? chainConfig.usdcAddress
+      : chainConfig.pointsAddress;
+
+  // Sign token permit
+  const { signature, deadline } = await signTokenPermit(
+    provider,
+    embeddedWallet.address,
+    chainId,
+    tokenAddress,
+    chainConfig.appAddress,
+    amount,
+    signingData.tokenNonce,
+    signingData.tokenName
+  );
+
+  // Send signed transaction
+  const signedData = {
+    chainId,
+    poolId,
+    optionIndex,
+    amount,
+    walletAddress: embeddedWallet.address,
+    tokenType,
+    permitSignature: {
+      v: signature.v,
+      r: signature.r,
+      s: signature.s,
+    },
+    usdcPermitDeadline: deadline,
+  };
+
+  return await sendSignedBet(signedData);
 };
 
 /**
@@ -211,68 +287,4 @@ export const sendSignedBet = async (signedData: SignedBetData) => {
   const txResult = await txResponse.json();
   console.log("Transaction result:", txResult);
   return txResult;
-};
-
-/**
- * Places a bet using the provided wallet and parameters
- */
-export const placeBet = async (
-  embeddedWallet: Wallet,
-  chainId: string | number,
-  poolId: string,
-  optionIndex: number,
-  amount: string
-) => {
-  console.log("placing bet", poolId, optionIndex, amount);
-  if (!embeddedWallet?.getEthereumProvider) {
-    throw new Error("Wallet does not support Ethereum provider");
-  }
-
-  const chainConfig = CHAIN_CONFIG[chainId];
-  if (!chainConfig) {
-    throw new Error(`Chain configuration not found for chainId: ${chainId}`);
-  }
-
-  // Get signing parameters
-  const signingParams = {
-    chainId,
-    poolId,
-    optionIndex,
-    amount,
-    userWalletAddress: embeddedWallet.address,
-  };
-
-  const signingData = await getSigningProps(signingParams);
-
-  // Get Ethereum provider
-  const provider = await embeddedWallet.getEthereumProvider();
-
-  // Sign USDC permit
-  const { signature, deadline } = await signUsdcPermit(
-    provider,
-    embeddedWallet.address,
-    chainId,
-    chainConfig.usdcAddress,
-    chainConfig.applicationContractAddress,
-    amount,
-    signingData.usdcNonce,
-    signingData.usdcName
-  );
-
-  // Send signed transaction
-  const signedData = {
-    chainId,
-    poolId,
-    optionIndex,
-    amount,
-    walletAddress: embeddedWallet.address,
-    permitSignature: {
-      v: signature.v,
-      r: signature.r,
-      s: signature.s,
-    },
-    usdcPermitDeadline: deadline,
-  };
-
-  return await sendSignedBet(signedData);
 };
