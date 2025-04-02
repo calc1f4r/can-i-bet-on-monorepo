@@ -33,7 +33,7 @@ export const Navbar = () => {
   const { ready, authenticated } = usePrivy();
 
   // Use our context for wallet and chain info
-  const { embeddedWallet, chainConfig } = useEmbeddedWallet();
+  const { embeddedWallet } = useEmbeddedWallet();
 
   // Use the useUsdcBalance hook instead of implementing fetchUsdcBalance
   const { usdcBalance, error } = useUsdcBalance();
@@ -157,14 +157,6 @@ export const Navbar = () => {
                   <Switch
                     checked={tokenType === TokenType.Points}
                     onCheckedChange={(value) => {
-                      console.log("value", value);
-                      console.log("current token type", tokenType);
-                      console.log("Points token type", TokenType.Points);
-                      console.log("USDC token type", TokenType.Usdc);
-                      console.log(
-                        "setting to",
-                        value ? TokenType.Points : TokenType.Usdc
-                      );
                       setTokenType(value ? TokenType.Points : TokenType.Usdc);
                     }}
                   />

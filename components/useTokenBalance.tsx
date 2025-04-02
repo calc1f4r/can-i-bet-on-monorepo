@@ -2,19 +2,18 @@ import { useEffect, useState } from "react";
 import { erc20Abi, formatUnits } from "viem";
 import { usePublicClient } from "wagmi";
 import { useEmbeddedWallet } from "./EmbeddedWalletProvider";
+import { useTokenContext } from "./TokenContext";
 
-interface UseTokenBalanceProps {
-  tokenAddress: `0x${string}`;
-  userAddress?: `0x${string}`;
-}
 
 export const useTokenBalance = ({
-  tokenAddress,
   userAddress,
-}: UseTokenBalanceProps) => {
+}: {
+  userAddress?: `0x${string}`;
+}) => {
   const publicClient = usePublicClient();
   const [balance, setBalance] = useState<string>("0");
   const { embeddedWallet } = useEmbeddedWallet();
+  const { tokenAddress } = useTokenContext();
 
   useEffect(() => {
     const fetchBalanceAndDecimals = async () => {

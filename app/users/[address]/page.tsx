@@ -6,6 +6,7 @@ import { PrivyLoginButton } from "@/components/PrivyLoginButton";
 import { useTokenContext } from "@/components/TokenContext";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useTokenBalance } from "@/components/useTokenBalance";
 import { useUsdcBalance } from "@/components/useUsdcBalance";
 import {
   Bet_OrderBy,
@@ -37,8 +38,7 @@ export default function UserBetsPage() {
     isLoading: walletLoading,
   } = useEmbeddedWallet();
   const [userAddress, setUserAddress] = useState<string>("");
-  const { usdcBalance } = useUsdcBalance();
-
+  const { tokenBalance } = useTokenBalance();
   // Determine if we're looking at our own profile or someone else's
   useEffect(() => {
     const addressParam = params.address as string;
