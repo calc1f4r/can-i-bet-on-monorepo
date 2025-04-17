@@ -17,6 +17,7 @@ export type ChainConfig = {
   usdcPrefix: string | { src: string; width?: number; height?: number };
 };
 
+
 // chainId -> per-chain config
 // CHANGEME WHEN ADDING A NEW CHAIN OR DEPLOYING A NEW CONTRACT
 export const CHAIN_CONFIG: Record<string, ChainConfig> = {

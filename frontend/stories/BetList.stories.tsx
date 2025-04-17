@@ -25,9 +25,11 @@ const mockBets: GetBetsQuery["bets"] = [
       options: ["YES", "NO"],
       status: PoolStatus.Pending,
       selectedOption: "-1",
-      totalBets: "150000000", // 150 USDC
-      totalBetsByOption: ["90000000", "60000000"], // 90 USDC on YES, 60 USDC on NO
-      decisionDate: "1735689600", // Dec 31, 2024
+      usdcVolume: "150000000", // 150 USDC
+      pointsVolume: "0",
+      usdcBetTotalsByOption: ["90000000", "60000000"], // 90 USDC on YES, 60 USDC on NO
+      pointsBetTotalsByOption: ["0", "0"],
+      decisionTime: "1735689600", // Dec 31, 2024
       betsCloseAt: "1735603200", // Dec 30, 2024
       creatorId: "0xdef456abc789def456abc789def456abc789def4",
       creatorName: "Crypto Predictor",
@@ -56,9 +58,11 @@ const mockBets: GetBetsQuery["bets"] = [
       options: ["YES", "NO"],
       status: PoolStatus.Pending,
       selectedOption: "-1",
-      totalBets: "250000000",
-      totalBetsByOption: ["100000000", "150000000"],
-      decisionDate: "1735689600", // Dec 31, 2024
+      usdcVolume: "250000000",
+      pointsVolume: "0",
+      usdcBetTotalsByOption: ["100000000", "150000000"],
+      pointsBetTotalsByOption: ["0", "0"],
+      decisionTime: "1735689600", // Dec 31, 2024
       betsCloseAt: "1735603200", // Dec 30, 2024
       creatorId: "0x789abc123def456789abc123def456789abc1234",
       creatorName: "ETH Enthusiast",
@@ -87,9 +91,11 @@ const mockBets: GetBetsQuery["bets"] = [
       options: ["YES", "NO"],
       status: PoolStatus.Graded,
       selectedOption: "0", // YES was correct
-      totalBets: "500000000",
-      totalBetsByOption: ["300000000", "200000000"],
-      decisionDate: "1735689600", // Dec 31, 2024
+      usdcVolume: "500000000",
+      pointsVolume: "0",
+      usdcBetTotalsByOption: ["300000000", "200000000"],
+      pointsBetTotalsByOption: ["0", "0"],
+      decisionTime: "1735689600", // Dec 31, 2024
       betsCloseAt: "1735603200", // Dec 30, 2024
       creatorId: "0xabc123def456abc123def456abc123def456abc1",
       creatorName: "ETH Developer",
@@ -119,9 +125,11 @@ const mockBets: GetBetsQuery["bets"] = [
       options: ["YES", "NO"],
       status: PoolStatus.Graded,
       selectedOption: "0",
-      totalBets: "500000000",
-      totalBetsByOption: ["300000000", "200000000"],
-      decisionDate: "1735689600", // Dec 31, 2024
+      usdcVolume: "500000000",
+      pointsVolume: "0",
+      usdcBetTotalsByOption: ["300000000", "200000000"],
+      pointsBetTotalsByOption: ["0", "0"],
+      decisionTime: "1735689600", // Dec 31, 2024
       betsCloseAt: "1735603200", // Dec 30, 2024
       creatorId: "0x789abc123def456789abc123def456789abc1234",
       creatorName: "ETH Enthusiast",
@@ -150,9 +158,11 @@ const mockBets: GetBetsQuery["bets"] = [
       options: ["YES", "NO"],
       status: PoolStatus.Graded,
       selectedOption: "-1",
-      totalBets: "150000000",
-      totalBetsByOption: ["90000000", "60000000"],
-      decisionDate: "1735689600", // Dec 31, 2024
+      usdcVolume: "150000000",
+      pointsVolume: "0",
+      usdcBetTotalsByOption: ["90000000", "60000000"],
+      pointsBetTotalsByOption: ["0", "0"],
+      decisionTime: "1735689600", // Dec 31, 2024
       betsCloseAt: "1735603200", // Dec 30, 2024
       creatorId: "0xdef456abc789def456abc789def456abc789def4",
       creatorName: "Crypto Predictor",
@@ -211,7 +221,8 @@ const mocks = [
     result: {
       data: {
         bets: mockBets.filter(
-          (bet) => bet.userAddress === "0xabc123def456abc123def456abc123def456abc1"
+          (bet) =>
+            bet.userAddress === "0xabc123def456abc123def456abc123def456abc1"
         ),
       },
     },

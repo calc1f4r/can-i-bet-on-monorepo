@@ -1,5 +1,10 @@
 import { GET_BETS, GET_BETS_SUBSCRIPTION } from "@/app/queries";
-import { Bet, PoolStatus } from "@/lib/__generated__/graphql";
+import {
+  Bet,
+  BetOutcome,
+  PoolStatus,
+  TokenType,
+} from "@/lib/__generated__/graphql";
 import { MockedProvider } from "@apollo/client/testing";
 import { faker } from "@faker-js/faker";
 import type { Meta, StoryObj } from "@storybook/react";
@@ -30,9 +35,11 @@ const createMockBet = (index: number): Bet => {
       totalLossCount: undefined,
       totalWinAmount: undefined,
       totalWinCount: undefined,
-      winStreak: undefined
+      winStreak: undefined,
     },
-    payoutClaimed: false, // Added missing required field
+    payoutClaimed: false,
+    outcome: BetOutcome.None,
+    tokenType: TokenType.Usdc,
     userAddress: faker.finance.ethereumAddress(),
     poolIntId: Math.floor(Math.random() * 10).toString(),
     blockNumber: (10000000 + index).toString(),
@@ -49,14 +56,15 @@ const createMockBet = (index: number): Bet => {
       __typename: "Pool",
       id: `0x${faker.string.hexadecimal({ length: 40 }).substring(2)}`,
       poolIntId: Math.floor(Math.random() * 10).toString(),
-      question:
-        faker.finance.currencyName() + " " + faker.company.buzzPhrase() + "?",
+      question: `${faker.finance.currencyName()} ${faker.company.buzzPhrase()}?`,
       options,
-      totalBets: (Math.floor(Math.random() * 100) + 10).toString(),
-      totalBetsByOption: ["5", "5"],
+      usdcBetTotalsByOption: ["5", "5"],
+      pointsBetTotalsByOption: ["0", "0"],
+      usdcVolume: (Math.floor(Math.random() * 100) + 10).toString(),
+      pointsVolume: "0",
       selectedOption: "-1",
       status: PoolStatus.Pending,
-      decisionDate: (Math.floor(now / 1000) + 86400 * 30).toString(), // 30 days in future
+      decisionTime: (Math.floor(now / 1000) + 86400 * 30).toString(), // 30 days in future
       betsCloseAt: (Math.floor(now / 1000) + 86400 * 15).toString(), // 15 days in future
       creatorId: faker.finance.ethereumAddress(),
       creatorName: faker.internet.userName(),

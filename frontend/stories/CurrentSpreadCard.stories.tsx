@@ -4,16 +4,41 @@ import { MockedProvider } from "@apollo/client/testing";
 import type { Meta, StoryObj } from "@storybook/react";
 import { CurrentSpreadCard } from "./CurrentSpreadCard";
 
-const mockPool = {
+const mockPool: Pool = {
+  __typename: "Pool",
   id: "0x01",
-  poolIntId: "0x01",
+  poolIntId: "1",
   question: "What is the capital of France?",
   options: ["Paris", "London"],
-  totalBets: "3000000",
-  totalBetsByOption: ["1000000", "2000000"],
-  selectedOption: "Paris",
+  usdcVolume: "3000000",
+  pointsVolume: "0",
+  usdcBetTotalsByOption: ["1000000", "2000000"],
+  pointsBetTotalsByOption: ["0", "0"],
+  selectedOption: "0",
   status: PoolStatus.Pending,
-} as Pool;
+  decisionTime: "1735689600", // Dec 31, 2024
+  betsCloseAt: "1735603200", // Dec 30, 2024
+  creatorId: "0xdef456abc789def456abc789def456abc789def4",
+  creatorName: "Geography Expert",
+  imageUrl: "https://example.com/paris.jpg",
+  chainId: "1",
+  chainName: "Ethereum",
+  isDraw: false,
+  xPostId: "1234567890",
+  category: "Geography",
+  closureCriteria: "Manual resolution",
+  closureInstructions: "The pool creator will resolve this bet",
+  bets: [],
+  createdBlockNumber: "100000",
+  createdBlockTimestamp: "1625097600",
+  createdTransactionHash: "0xabc123",
+  gradedBlockNumber: "0",
+  gradedBlockTimestamp: "0",
+  gradedTransactionHash: "0x0",
+  lastUpdatedBlockNumber: "100000",
+  lastUpdatedBlockTimestamp: "1625097600",
+  lastUpdatedTransactionHash: "0xabc123",
+};
 
 const mocks = [
   {

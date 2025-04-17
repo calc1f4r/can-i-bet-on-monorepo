@@ -1,4 +1,9 @@
-import { Bet, PoolStatus } from "@/lib/__generated__/graphql";
+import {
+  Bet,
+  BetOutcome,
+  PoolStatus,
+  TokenType,
+} from "@/lib/__generated__/graphql";
 import type { Meta, StoryObj } from "@storybook/react";
 import { ActivityLine } from "./ActivityLine";
 
@@ -44,17 +49,22 @@ const createMockBet = (optionIndex: number, options: string[]): Bet => ({
   createdAt: "0",
   updatedAt: "0",
   poolIdHex: "0x0",
+  payoutClaimed: false,
+  outcome: BetOutcome.None,
+  tokenType: TokenType.Usdc,
   pool: {
     __typename: "Pool",
     id: "0x5678",
     poolIntId: "1",
     question: "Will Bitcoin reach $100k by 2024?",
     options,
-    totalBets: "10",
-    totalBetsByOption: ["5", "5"],
+    usdcBetTotalsByOption: ["5", "5"],
+    pointsBetTotalsByOption: ["0", "0"],
+    usdcVolume: "10",
+    pointsVolume: "0",
     selectedOption: "-1",
     status: PoolStatus.Pending,
-    decisionDate: "1735689600", // Some date in 2025
+    decisionTime: "1735689600", // Some date in 2025
     betsCloseAt: "1735603200", // Some date in 2025
     creatorId: "0x9876",
     creatorName: "Crypto Predictor",
@@ -78,7 +88,6 @@ const createMockBet = (optionIndex: number, options: string[]): Bet => ({
     lastUpdatedBlockTimestamp: "1625097600",
     lastUpdatedTransactionHash: "0xabc123",
   },
-  payoutClaimed: false,
 });
 
 // Create a story with a larger bet amount

@@ -25,6 +25,9 @@ const geistMono = Geist_Mono({
 const client = new ApolloClient({
   uri: process.env.NEXT_PUBLIC_INDEXER_URL,
   cache: new InMemoryCache(),
+  headers: {
+    Authorization: `Bearer ${process.env.NEXT_PUBLIC_INDEXER_API_KEY}`
+  }
 });
 
 //TODO I fought the law and the law won

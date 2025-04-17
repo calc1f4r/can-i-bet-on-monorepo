@@ -6,7 +6,6 @@ import { PrivyLoginButton } from "@/components/PrivyLoginButton";
 import { useTokenContext } from "@/components/TokenContext";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { useTokenBalance } from "@/components/useTokenBalance";
 import { useUsdcBalance } from "@/components/useUsdcBalance";
 import {
   Bet_OrderBy,
@@ -32,13 +31,13 @@ const generateBannerColor = (address: string): string => {
 export default function UserBetsPage() {
   const params = useParams();
   const { ready, authenticated } = usePrivy();
+  const { usdcBalance } = useUsdcBalance();
   const {
     embeddedWallet,
     chainConfig,
     isLoading: walletLoading,
   } = useEmbeddedWallet();
   const [userAddress, setUserAddress] = useState<string>("");
-  const { tokenBalance } = useTokenBalance();
   // Determine if we're looking at our own profile or someone else's
   useEffect(() => {
     const addressParam = params.address as string;
