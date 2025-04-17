@@ -1,21 +1,17 @@
-import { GET_BETS, GET_BETS_SUBSCRIPTION } from "@/app/queries";
-import {
-  Bet,
-  BetOutcome,
-  PoolStatus,
-  TokenType,
-} from "@/lib/__generated__/graphql";
-import { MockedProvider } from "@apollo/client/testing";
-import { faker } from "@faker-js/faker";
-import type { Meta, StoryObj } from "@storybook/react";
-import { Activity } from "./Activity";
+import { GET_BETS } from '@/app/queries';
+import { Bet, BetOutcome, PoolStatus, TokenType } from '@/lib/__generated__/graphql';
+import { MockedProvider } from '@apollo/client/testing';
+import { faker } from '@faker-js/faker';
+import type { Meta, StoryObj } from '@storybook/react';
+
+import { Activity } from './Activity';
 
 // Create a mock bet generator function
 const createMockBet = (index: number): Bet => {
   const now = Date.now();
   const timestamp = Math.floor((now - index * 5 * 60 * 1000) / 1000).toString(); // Each bet 5 minutes apart
   const optionIndex = Math.floor(Math.random() * 2).toString(); // 0 or 1 for YES/NO
-  const options = ["YES", "NO"];
+  const options = ['YES', 'NO'];
   const amount = (Math.floor(Math.random() * 100) + 1) * 1000000; // Random amount between $1-$100
 
   return {
@@ -24,7 +20,7 @@ const createMockBet = (index: number): Bet => {
     optionIndex,
     amount: amount.toString(),
     user: {
-      __typename: "User",
+      __typename: 'User',
       id: faker.finance.ethereumAddress(),
       address: faker.finance.ethereumAddress(),
       bets: [],
@@ -44,59 +40,45 @@ const createMockBet = (index: number): Bet => {
     poolIntId: Math.floor(Math.random() * 10).toString(),
     blockNumber: (10000000 + index).toString(),
     blockTimestamp: timestamp,
-    transactionHash: `0x${faker.string
-      .hexadecimal({ length: 64 })
-      .substring(2)}`,
-    chainId: "1",
-    chainName: "Ethereum",
+    transactionHash: `0x${faker.string.hexadecimal({ length: 64 }).substring(2)}`,
+    chainId: '1',
+    chainName: 'Ethereum',
     createdAt: timestamp,
     updatedAt: timestamp,
     poolIdHex: `0x${faker.string.hexadecimal({ length: 40 }).substring(2)}`,
     pool: {
-      __typename: "Pool",
+      __typename: 'Pool',
       id: `0x${faker.string.hexadecimal({ length: 40 }).substring(2)}`,
       poolIntId: Math.floor(Math.random() * 10).toString(),
       question: `${faker.finance.currencyName()} ${faker.company.buzzPhrase()}?`,
       options,
-      usdcBetTotalsByOption: ["5", "5"],
-      pointsBetTotalsByOption: ["0", "0"],
+      usdcBetTotalsByOption: ['5', '5'],
+      pointsBetTotalsByOption: ['0', '0'],
       usdcVolume: (Math.floor(Math.random() * 100) + 10).toString(),
-      pointsVolume: "0",
-      selectedOption: "-1",
+      pointsVolume: '0',
+      selectedOption: '-1',
       status: PoolStatus.Pending,
       decisionTime: (Math.floor(now / 1000) + 86400 * 30).toString(), // 30 days in future
       betsCloseAt: (Math.floor(now / 1000) + 86400 * 15).toString(), // 15 days in future
       creatorId: faker.finance.ethereumAddress(),
       creatorName: faker.internet.userName(),
       imageUrl: faker.image.urlPicsumPhotos({ width: 200, height: 200 }),
-      chainId: "1",
-      chainName: "Ethereum",
+      chainId: '1',
+      chainName: 'Ethereum',
       isDraw: false,
       xPostId: faker.string.numeric(10),
-      category: faker.helpers.arrayElement([
-        "Crypto",
-        "Politics",
-        "Sports",
-        "Entertainment",
-      ]),
-      closureCriteria: "Manual resolution",
-      closureInstructions: "The pool creator will resolve this bet",
-      createdBlockNumber: "10000000",
+      category: faker.helpers.arrayElement(['Crypto', 'Politics', 'Sports', 'Entertainment']),
+      closureCriteria: 'Manual resolution',
+      closureInstructions: 'The pool creator will resolve this bet',
+      createdBlockNumber: '10000000',
       createdBlockTimestamp: (Math.floor(now / 1000) - 86400 * 5).toString(), // 5 days ago
-      createdTransactionHash: `0x${faker.string
-        .hexadecimal({ length: 64 })
-        .substring(2)}`,
-      gradedBlockNumber: "0",
-      gradedBlockTimestamp: "0",
-      gradedTransactionHash: "0x0",
-      lastUpdatedBlockNumber: "10000000",
-      lastUpdatedBlockTimestamp: (
-        Math.floor(now / 1000) -
-        86400 * 5
-      ).toString(),
-      lastUpdatedTransactionHash: `0x${faker.string
-        .hexadecimal({ length: 64 })
-        .substring(2)}`,
+      createdTransactionHash: `0x${faker.string.hexadecimal({ length: 64 }).substring(2)}`,
+      gradedBlockNumber: '0',
+      gradedBlockTimestamp: '0',
+      gradedTransactionHash: '0x0',
+      lastUpdatedBlockNumber: '10000000',
+      lastUpdatedBlockTimestamp: (Math.floor(now / 1000) - 86400 * 5).toString(),
+      lastUpdatedTransactionHash: `0x${faker.string.hexadecimal({ length: 64 }).substring(2)}`,
       bets: [],
     },
   };
@@ -107,16 +89,10 @@ const generateMockBets = (count: number): Bet[] => {
   return Array.from({ length: count }, (_, i) => createMockBet(i));
 };
 
-// Create mocks for both query and subscription
-const createMocks = (
-  bets: Bet[],
-  filter?: { pool?: string },
-  maxEntries: number = 10
-) => {
+// Create mocks for the query
+const createMocks = (bets: Bet[], filter?: { pool?: string }, maxEntries: number = 10) => {
   // If filter is provided, filter the bets
-  const filteredBets = filter?.pool
-    ? bets.filter((bet) => bet.pool.id === filter.pool)
-    : bets;
+  const filteredBets = filter?.pool ? bets.filter(bet => bet.pool.id === filter.pool) : bets;
 
   // Limit to maxEntries
   const limitedBets = filteredBets.slice(0, maxEntries);
@@ -137,29 +113,14 @@ const createMocks = (
     },
   };
 
-  // Create subscription mock
-  const subscriptionMock = {
-    request: {
-      query: GET_BETS_SUBSCRIPTION,
-      variables: {
-        filter,
-      },
-    },
-    result: {
-      data: {
-        bets: limitedBets.length > 0 ? [limitedBets[0]] : [],
-      },
-    },
-  };
-
-  return [queryMock, subscriptionMock];
+  return [queryMock];
 };
 
 const meta: Meta<typeof Activity> = {
-  title: "Components/Activity",
+  title: 'Components/Activity',
   component: Activity,
   parameters: {
-    layout: "centered",
+    layout: 'centered',
   },
   decorators: [
     (Story, context) => {
@@ -207,26 +168,13 @@ export const HideQuestion: Story = {
 
 export const NoResults: Story = {
   decorators: [
-    (Story) => {
+    Story => {
       const emptyMocks = [
         {
           request: {
             query: GET_BETS,
             variables: {
               first: 10,
-              filter: {},
-            },
-          },
-          result: {
-            data: {
-              bets: [],
-            },
-          },
-        },
-        {
-          request: {
-            query: GET_BETS_SUBSCRIPTION,
-            variables: {
               filter: {},
             },
           },

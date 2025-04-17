@@ -3,13 +3,18 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev --turbopack",
     "build": "next build",
-    "start": "next start",
-    "lint": "next lint",
-    "storybook": "storybook dev -p 6006",
     "build-storybook": "storybook build",
-    "codegen": "graphql-codegen --config codegen.ts"
+    "codegen": "graphql-codegen && grep -v \"PoolId = 'pool__id',\\|BetId = 'bet__id',\\|UserAddress = 'user__address'\" lib/__generated__/graphql.ts > temp.ts && mv temp.ts lib/__generated__/graphql.ts",
+    "dev": "next dev --turbopack",
+    "lint": "next lint",
+    "start": "next start",
+    "storybook": "storybook dev -p 6006"
+  },
+  "eslintConfig": {
+    "extends": [
+      "plugin:storybook/recommended"
+    ]
   },
   "dependencies": {
     "@apollo/client": "^3.13.1",
@@ -88,10 +93,5 @@
     "storybook": "^8.5.8",
     "tailwindcss": "^3.4.17",
     "typescript": "^5.7.3"
-  },
-  "eslintConfig": {
-    "extends": [
-      "plugin:storybook/recommended"
-    ]
   }
 }

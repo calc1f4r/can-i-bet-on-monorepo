@@ -9,18 +9,35 @@
   ],
   "scripts": {
     "build": "bun run build:contracts && bun run build:frontend && bun run build:graph",
-    "build:frontend": "bun --cwd frontend build",
     "build:contracts": "cd contracts && forge build",
+    "build:frontend": "bun --cwd frontend build",
     "build:graph": "bun --cwd graph build",
-    "dev": "bun --cwd frontend dev",
-    "test": "bun run test:frontend && bun run test:contracts",
-    "test:frontend": "bun --cwd frontend test",
-    "test:contracts": "cd contracts && forge test",
-    "frontend": "bun --cwd frontend",
     "contracts": "cd contracts &&",
-    "graph": "bun --cwd graph"
+    "dev": "bun --cwd frontend dev",
+    "format": "prettier --write .",
+    "frontend": "bun --cwd frontend",
+    "graph": "bun --cwd graph",
+    "lint": "bun --cwd frontend lint --fix",
+    "prepare": "husky",
+    "test": "bun run test:frontend && bun run test:contracts",
+    "test:contracts": "cd contracts && forge test",
+    "test:frontend": "bun --cwd frontend test"
+  },
+  "lint-staged": {
+    "*.{js,jsx,ts,tsx}": [
+      "cd frontend && bun run lint",
+      "prettier --write"
+    ],
+    "*.{json,md,yml,yaml}": [
+      "prettier --write"
+    ]
   },
   "devDependencies": {
+    "@trivago/prettier-plugin-sort-imports": "^5.2.2",
+    "husky": "^9.1.7",
+    "lint-staged": "^15.5.1",
+    "prettier": "^3.5.3",
+    "prettier-plugin-packagejson": "^2.5.10",
     "turbo": "^2.0.0"
   },
   "packageManager": "bun@1.x"
