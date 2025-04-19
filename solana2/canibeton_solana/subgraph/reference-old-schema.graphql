@@ -1,0 +1,169 @@
+enum PoolStatus {
+  PENDING
+  GRADED
+}
+
+enum BetOutcome {
+  NONE
+  WON
+  LOST
+  VOIDED
+  DRAW
+}
+
+enum TokenType {
+  USDC
+  POINTS
+}
+
+type Bet @entity {
+  id: String!
+  betIntId: BigInt! # uint256
+  poolIntId: BigInt! # uint256
+  poolIdHex: Bytes!
+  pool: Pool!
+  userAddress: Bytes! # address
+  user: User!
+  optionIndex: BigInt! # uint256
+  amount: BigInt! # uint256
+  createdAt: BigInt!
+  updatedAt: BigInt!
+  payoutClaimed: Boolean!
+  payoutClaimedBlockNumber: BigInt
+  payoutClaimedBlockTimestamp: BigInt
+  payoutClaimedTransactionHash: Bytes
+  outcome: BetOutcome!
+  tokenType: TokenType!
+
+  blockNumber: BigInt!
+  blockTimestamp: BigInt!
+  transactionHash: Bytes!
+
+  chainName: String!
+  chainId: BigInt!
+}
+
+type BetPlaced @entity(immutable: true) {
+  id: String!
+  betId: BigInt! # uint256
+  poolId: BigInt! # uint256
+  user: Bytes! # address
+  optionIndex: BigInt! # uint256
+  amount: BigInt! # uint256
+  tokenType: TokenType!
+  blockNumber: BigInt!
+  blockTimestamp: BigInt!
+  transactionHash: Bytes!
+  poolCreated: PoolCreated!
+
+  chainName: String!
+  chainId: BigInt!
+}
+
+type Pool @entity {
+  id: String!
+  poolIntId: BigInt! # uint256
+  question: String! # string
+  options: [String!]! # string[2]
+  usdcBetTotalsByOption: [BigInt!]! # uint256[2]
+  pointsBetTotalsByOption: [BigInt!]! # uint256[2]
+  usdcVolume: BigInt! # Total USDC bet amount across all options
+  pointsVolume: BigInt! # Total POINTS bet amount across all options
+  selectedOption: BigInt! # uint256
+  status: PoolStatus!
+  bets: [Bet!]! @derivedFrom(field: "pool")
+  imageUrl: String!
+  category: String!
+  creatorName: String! # string
+  creatorId: String! # string
+  closureCriteria: String!
+  closureInstructions: String!
+  betsCloseAt: BigInt! # uint40
+  decisionTime: BigInt! # uint40
+  isDraw: Boolean!
+  chainName: String!
+  chainId: BigInt!
+  xPostId: String!
+
+  createdBlockNumber: BigInt!
+  createdBlockTimestamp: BigInt!
+  createdTransactionHash: Bytes!
+  lastUpdatedBlockNumber: BigInt!
+  lastUpdatedBlockTimestamp: BigInt!
+  lastUpdatedTransactionHash: Bytes!
+  gradedBlockNumber: BigInt!
+  gradedBlockTimestamp: BigInt!
+  gradedTransactionHash: Bytes!
+}
+
+type PoolClosed @entity(immutable: true) {
+  id: String!
+  poolId: BigInt! # uint256
+  selectedOption: BigInt! # uint256
+  blockNumber: BigInt!
+  blockTimestamp: BigInt!
+  transactionHash: Bytes!
+
+  chainName: String!
+  chainId: BigInt!
+}
+
+type PoolCreated @entity(immutable: true) {
+  id: String!
+  poolId: BigInt! # uint256
+  creatorId: String! # string
+  question: String! # string
+  options: [String!]! # string[2]
+  betsCloseAt: BigInt! # uint40
+  decisionTime: BigInt! # uint40
+  imageUrl: String!
+  category: String!
+  creatorName: String!
+  closureCriteria: String!
+  closureInstructions: String!
+  blockNumber: BigInt!
+  blockTimestamp: BigInt!
+  transactionHash: Bytes!
+  chainName: String!
+  chainId: BigInt!
+}
+
+type TwitterPostIdSet @entity(immutable: true) {
+  id: String!
+  poolIdHex: Bytes! # uint256
+  poolIntId: BigInt! # uint256
+  xPostId: String! # string
+  pool: Pool!
+}
+
+type PayoutClaimed @entity(immutable: true) {
+  id: String!
+  betId: BigInt! # uint256
+  poolId: BigInt! # uint256
+  user: Bytes! # address
+  amount: BigInt! # uint256
+  outcome: BetOutcome!
+  tokenType: TokenType!
+  blockNumber: BigInt!
+  blockTimestamp: BigInt!
+  transactionHash: Bytes!
+  bet: Bet!
+  pool: Pool!
+
+  chainName: String!
+  chainId: BigInt!
+}
+
+type User @entity {
+  id: Bytes!
+  address: Bytes!
+  bets: [Bet!]! @derivedFrom(field: "user")
+  winStreak: BigInt!
+  lossStreak: BigInt!
+  loginStreak: BigInt!
+  lastLogin: BigInt!
+  totalWinCount: BigInt!
+  totalWinAmount: BigInt!
+  totalLossCount: BigInt!
+  totalLossAmount: BigInt!
+}

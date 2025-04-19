@@ -1,0 +1,47 @@
+syntax = "proto3";
+
+package substreams.v1.program;
+
+message Data {
+    repeated PoolCreated_Event pool_created_event_list = 1;
+    repeated CreatePool_Instruction create_pool_instruction_list = 2;
+    repeated Initialize_Instruction initialize_instruction_list = 3;
+}
+message PoolCreated_Event {
+  string tx_hash = 1;
+  uint64 pool_id = 2;
+  string question = 3;
+  repeated string options = 4;
+  int64 bets_close_at = 5;
+  string image_url = 6;
+  string category = 7;
+  string creator_name = 8;
+  string creator_id = 9;
+  string closure_criteria = 10;
+  string closure_instructions = 11;
+  int64 created_at = 12;
+}
+
+message CreatePool_Instruction {
+    string tx_hash = 1;
+    string question = 2;
+    repeated string options = 3;
+    int64 bets_close_at = 4;
+    string image_url = 5;
+    string category = 6;
+    string creator_name = 7;
+    string creator_id = 8;
+    string closure_criteria = 9;
+    string closure_instructions = 10;
+    string acct_betting_pools = 11;
+    string acct_pool = 12;
+    string acct_authority = 13;
+}
+message Initialize_Instruction {
+  string trx_hash = 1;
+    string usdc_mint = 2;
+    string bet_points_mint = 3;
+    string acct_betting_pools = 4;
+    string acct_authority = 5;
+}
+

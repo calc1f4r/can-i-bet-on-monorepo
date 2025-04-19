@@ -1,0 +1,45 @@
+enum PoolStatus {
+  NONE
+  PENDING
+  GRADED
+  REGRADED
+}
+
+type Pool @entity {
+  id: ID!
+  poolIntId: BigInt! # u64
+  question: String! # string
+  options: [String!]! # [String; 2]
+  betsCloseAt: BigInt! # i64
+  decisionTime: BigInt! # i64
+  usdcBetTotalsByOption: [BigInt!]! # [u64; 2]
+  pointsBetTotalsByOption: [BigInt!]! # [u64; 2]
+  winningOption: BigInt! # u64
+  status: PoolStatus!
+  isDraw: Boolean!
+  createdAt: BigInt! # i64
+  category: String!
+  creatorName: String!
+  creatorId: String!
+  closureCriteria: String!
+  closureInstructions: String!
+  imageUrl: String!
+  twitterPostId: String!
+  creationTxHash: String!
+}
+
+type PoolCreated @entity(immutable: true) {
+  id: ID!
+  poolId: BigInt! # u64
+  question: String! # string
+  options: [String!]! # [String; 2]
+  betsCloseAt: BigInt! # i64
+  createdAt: BigInt! # i64
+  imageUrl: String!
+  category: String!
+  creatorName: String!
+  creatorId: String!
+  closureCriteria: String!
+  closureInstructions: String!
+  txHash: String!
+}
