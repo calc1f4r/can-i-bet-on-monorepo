@@ -7,6 +7,10 @@ bun --cwd frontend codegen
 echo "Running codegen in graph..."
 bun --cwd graph codegen
 
+# Stage any files modified by codegen
+echo "Staging files modified by codegen..."
+git add -u
+
 # Run lint-staged (eslint fix and prettier)
 echo "Running lint and format..."
 bun lint-staged
@@ -14,5 +18,9 @@ bun lint-staged
 # Build everything
 echo "Building the project..."
 bun run build
+
+# Stage any files modified by the build process
+echo "Staging any files modified by the build process..."
+git add -u
 
 echo "Pre-commit hook completed successfully!"

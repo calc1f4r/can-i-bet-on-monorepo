@@ -54,3 +54,5 @@ target/
 **/*.rs.bk
 test-ledger/
 .yarn/
+
+run
