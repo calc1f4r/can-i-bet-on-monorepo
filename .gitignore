@@ -47,3 +47,10 @@ out/
 
 # Turbo
 .turbo
+
+# Solana
+.anchor
+target/
+**/*.rs.bk
+test-ledger/
+.yarn/
