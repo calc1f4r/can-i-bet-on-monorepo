@@ -1,13 +1,24 @@
 import { BigInt } from '@graphprotocol/graph-ts';
 import { Protobuf } from 'as-proto';
 
-import { Bet, BetPlaced, Pool, PoolCreated } from '../generated/schema';
+import { Bet, BetPlaced, Pool, PoolCreated, PoolMediaSet } from '../generated/schema';
 import { Data as protoData } from './pb/substreams/v1/program/Data';
 
 function mapTokenType(tokenType: i32): string {
   if (tokenType === 0) return 'USDC';
   if (tokenType === 1) return 'POINTS';
   return 'USDC'; // Default
+}
+
+function mapMediaType(mediaType: i32): string {
+  if (mediaType === 0) return 'X';
+  if (mediaType === 1) return 'TIKTOK';
+  if (mediaType === 2) return 'INSTAGRAM';
+  if (mediaType === 3) return 'FACEBOOK';
+  if (mediaType === 4) return 'IMAGE';
+  if (mediaType === 5) return 'VIDEO';
+  if (mediaType === 6) return 'EXTERNAL_LINK';
+  return 'IMAGE'; // Default
 }
 
 function mapBetOutcome(outcome: i32): string {
@@ -31,7 +42,8 @@ export function handleTriggers(bytes: Uint8Array): void {
     poolCreatedEntity.question = event.question;
     poolCreatedEntity.options = event.options;
     poolCreatedEntity.betsCloseAt = BigInt.fromI64(event.betsCloseAt);
-    poolCreatedEntity.imageUrl = event.imageUrl;
+    poolCreatedEntity.mediaUrl = event.mediaUrl;
+    poolCreatedEntity.mediaType = mapMediaType(event.mediaType);
     poolCreatedEntity.category = event.category;
     poolCreatedEntity.creatorName = event.creatorName;
     poolCreatedEntity.creatorId = event.creatorId;
@@ -58,7 +70,8 @@ export function handleTriggers(bytes: Uint8Array): void {
     poolEntity.creatorId = event.creatorId;
     poolEntity.closureCriteria = event.closureCriteria;
     poolEntity.closureInstructions = event.closureInstructions;
-    poolEntity.imageUrl = event.imageUrl;
+    poolEntity.mediaUrl = event.mediaUrl;
+    poolEntity.mediaType = mapMediaType(event.mediaType);
     poolEntity.twitterPostId = ''; // Default empty string
     poolEntity.creationTxHash = event.txHash;
     poolEntity.save();
@@ -120,6 +133,28 @@ export function handleTriggers(bytes: Uint8Array): void {
         }
       }
 
+      poolEntity.save();
+    }
+  });
+
+  // Handle PoolMediaSet events
+  input.poolMediaSetEventList.forEach(event => {
+    // Create PoolMediaSet entity
+    const poolMediaSetId = `${event.txHash}-${event.poolId}`;
+    let poolMediaSetEntity = new PoolMediaSet(poolMediaSetId);
+    poolMediaSetEntity.poolId = BigInt.fromU64(event.poolId);
+    poolMediaSetEntity.mediaUrl = event.mediaUrl;
+    poolMediaSetEntity.mediaType = mapMediaType(event.mediaType);
+    poolMediaSetEntity.transactionHash = event.txHash;
+    poolMediaSetEntity.pool = event.poolId.toString();
+    poolMediaSetEntity.save();
+
+    // Update the Pool entity with the new media information
+    const poolId = event.poolId.toString();
+    let poolEntity = Pool.load(poolId);
+    if (poolEntity) {
+      poolEntity.mediaUrl = event.mediaUrl;
+      poolEntity.mediaType = mapMediaType(event.mediaType);
       poolEntity.save();
     }
   });

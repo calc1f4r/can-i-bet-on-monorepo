@@ -8,6 +8,7 @@ import { CreatePool_Instruction } from './CreatePool_Instruction';
 import { Initialize_Instruction } from './Initialize_Instruction';
 import { PlaceBet_Instruction } from './PlaceBet_Instruction';
 import { PoolCreated_Event } from './PoolCreated_Event';
+import { PoolMediaSet_Event } from './PoolMediaSet_Event';
 
 export class Data {
   static encode(message: Data, writer: Writer): void {
@@ -50,6 +51,14 @@ export class Data {
       PlaceBet_Instruction.encode(placeBetInstructionList[i], writer);
       writer.ldelim();
     }
+
+    const poolMediaSetEventList = message.poolMediaSetEventList;
+    for (let i: i32 = 0; i < poolMediaSetEventList.length; ++i) {
+      writer.uint32(50);
+      writer.fork();
+      PoolMediaSet_Event.encode(poolMediaSetEventList[i], writer);
+      writer.ldelim();
+    }
   }
 
   static decode(reader: Reader, length: i32): Data {
@@ -85,6 +94,10 @@ export class Data {
           );
           break;
 
+        case 6:
+          message.poolMediaSetEventList.push(PoolMediaSet_Event.decode(reader, reader.uint32()));
+          break;
+
         default:
           reader.skipType(tag & 7);
           break;
@@ -99,18 +112,21 @@ export class Data {
   initializeInstructionList: Array<Initialize_Instruction>;
   betPlacedEventList: Array<BetPlaced_Event>;
   placeBetInstructionList: Array<PlaceBet_Instruction>;
+  poolMediaSetEventList: Array<PoolMediaSet_Event>;
 
   constructor(
     poolCreatedEventList: Array<PoolCreated_Event> = [],
     createPoolInstructionList: Array<CreatePool_Instruction> = [],
     initializeInstructionList: Array<Initialize_Instruction> = [],
     betPlacedEventList: Array<BetPlaced_Event> = [],
-    placeBetInstructionList: Array<PlaceBet_Instruction> = []
+    placeBetInstructionList: Array<PlaceBet_Instruction> = [],
+    poolMediaSetEventList: Array<PoolMediaSet_Event> = []
   ) {
     this.poolCreatedEventList = poolCreatedEventList;
     this.createPoolInstructionList = createPoolInstructionList;
     this.initializeInstructionList = initializeInstructionList;
     this.betPlacedEventList = betPlacedEventList;
     this.placeBetInstructionList = placeBetInstructionList;
+    this.poolMediaSetEventList = poolMediaSetEventList;
   }
 }

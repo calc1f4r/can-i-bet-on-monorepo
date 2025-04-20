@@ -6,10 +6,10 @@ resolution = true
 skip-lint = false
 
 [programs.devnet]
-betting_pools_2 = "9nW58a3uYAveyKAxpytoSwobwGTMm4QHJwzKiiGK7RXK"
+betting_pools_2 = "E3V6czvYpjrdZVTLwFKzrw3GhCvH1LXKijADCkahw7QF"
 
 [programs.localnet]
-betting_pools_2 = "9nW58a3uYAveyKAxpytoSwobwGTMm4QHJwzKiiGK7RXK"
+betting_pools_2 = "6qXrYhcXYzKDCU6XoSJY94oNGF4QZ31KGbmUTDW8YQPP"
 
 [registry]
 url = "https://api.apr.dev"

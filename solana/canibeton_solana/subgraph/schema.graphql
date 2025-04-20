@@ -18,6 +18,16 @@ enum TokenType {
   POINTS
 }
 
+enum MediaType {
+  X
+  TIKTOK
+  INSTAGRAM
+  FACEBOOK
+  IMAGE
+  VIDEO
+  EXTERNAL_LINK
+}
+
 type Pool @entity {
   id: ID!
   poolIntId: BigInt! # u64
@@ -36,7 +46,8 @@ type Pool @entity {
   creatorId: String!
   closureCriteria: String!
   closureInstructions: String!
-  imageUrl: String!
+  mediaUrl: String!
+  mediaType: MediaType!
   twitterPostId: String!
   creationTxHash: String!
   bets: [Bet!]! @derivedFrom(field: "pool")
@@ -49,7 +60,8 @@ type PoolCreated @entity(immutable: true) {
   options: [String!]! # [String; 2]
   betsCloseAt: BigInt! # i64
   createdAt: BigInt! # i64
-  imageUrl: String!
+  mediaUrl: String!
+  mediaType: MediaType!
   category: String!
   creatorName: String!
   creatorId: String!
@@ -84,5 +96,14 @@ type BetPlaced @entity(immutable: true) {
   createdAt: BigInt! # i64
   transactionHash: String! # tx_hash
   bet: Bet # Relationship to bet entity
+  pool: Pool # Relationship to pool entity
+}
+
+type PoolMediaSet @entity(immutable: true) {
+  id: ID!
+  poolId: BigInt! # u64
+  mediaUrl: String!
+  mediaType: MediaType!
+  transactionHash: String! # tx_hash
   pool: Pool # Relationship to pool entity
 }

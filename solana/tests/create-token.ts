@@ -36,7 +36,7 @@ export function isDevnet(): boolean {
 // For bet points token:
 // - Set to null to deploy a new token on test run
 // - Set to a specific address to use an existing token
-export const DEVNET_BET_POINTS_ADDRESS = 'CkHdjk2V3bGXH8n7xG7mxvUxFeCxMsDJoGTmgpmcYbBs';
+export const DEVNET_BET_POINTS_ADDRESS = '5fb4HKLfedLHhtCSgtaHT7Vtp3795kvw83cNxYSvJ1JF';
 export const LOCALNET_BET_POINTS_ADDRESS = null;
 
 // USDC addresses

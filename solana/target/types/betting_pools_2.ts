@@ -5,7 +5,7 @@
  * IDL can be found at `target/idl/betting_pools_2.json`.
  */
 export type BettingPools2 = {
-  "address": "9nW58a3uYAveyKAxpytoSwobwGTMm4QHJwzKiiGK7RXK",
+  "address": "E3V6czvYpjrdZVTLwFKzrw3GhCvH1LXKijADCkahw7QF",
   "metadata": {
     "name": "bettingPools2",
     "version": "0.1.1",
@@ -116,8 +116,16 @@ export type BettingPools2 = {
           "type": "i64"
         },
         {
-          "name": "imageUrl",
+          "name": "mediaUrl",
           "type": "string"
+        },
+        {
+          "name": "mediaType",
+          "type": {
+            "defined": {
+              "name": "mediaType"
+            }
+          }
         },
         {
           "name": "category",
@@ -356,6 +364,72 @@ export type BettingPools2 = {
           }
         }
       ]
+    },
+    {
+      "name": "setMedia",
+      "docs": [
+        "Update the media URL and type for a pool"
+      ],
+      "discriminator": [
+        10,
+        60,
+        163,
+        255,
+        4,
+        75,
+        82,
+        109
+      ],
+      "accounts": [
+        {
+          "name": "pool",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  111,
+                  111,
+                  108,
+                  95,
+                  118,
+                  51
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "pool.id",
+                "account": "pool"
+              }
+            ]
+          }
+        },
+        {
+          "name": "authority",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "systemProgram",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "mediaUrl",
+          "type": "string"
+        },
+        {
+          "name": "mediaType",
+          "type": {
+            "defined": {
+              "name": "mediaType"
+            }
+          }
+        }
+      ]
     }
   ],
   "accounts": [
@@ -437,6 +511,19 @@ export type BettingPools2 = {
         220,
         157,
         82
+      ]
+    },
+    {
+      "name": "poolMediaSet",
+      "discriminator": [
+        248,
+        179,
+        164,
+        142,
+        185,
+        80,
+        167,
+        217
       ]
     }
   ],
@@ -667,6 +754,35 @@ export type BettingPools2 = {
       }
     },
     {
+      "name": "mediaType",
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "x"
+          },
+          {
+            "name": "tikTok"
+          },
+          {
+            "name": "instagram"
+          },
+          {
+            "name": "facebook"
+          },
+          {
+            "name": "image"
+          },
+          {
+            "name": "video"
+          },
+          {
+            "name": "externalLink"
+          }
+        ]
+      }
+    },
+    {
       "name": "pool",
       "type": {
         "kind": "struct",
@@ -735,8 +851,16 @@ export type BettingPools2 = {
             "type": "i64"
           },
           {
-            "name": "imageUrl",
+            "name": "mediaUrl",
             "type": "string"
+          },
+          {
+            "name": "mediaType",
+            "type": {
+              "defined": {
+                "name": "mediaType"
+              }
+            }
           },
           {
             "name": "category",
@@ -816,8 +940,16 @@ export type BettingPools2 = {
             "type": "i64"
           },
           {
-            "name": "imageUrl",
+            "name": "mediaUrl",
             "type": "string"
+          },
+          {
+            "name": "mediaType",
+            "type": {
+              "defined": {
+                "name": "mediaType"
+              }
+            }
           },
           {
             "name": "category",
@@ -842,6 +974,30 @@ export type BettingPools2 = {
           {
             "name": "createdAt",
             "type": "i64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "poolMediaSet",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "poolId",
+            "type": "u64"
+          },
+          {
+            "name": "mediaUrl",
+            "type": "string"
+          },
+          {
+            "name": "mediaType",
+            "type": {
+              "defined": {
+                "name": "mediaType"
+              }
+            }
           }
         ]
       }

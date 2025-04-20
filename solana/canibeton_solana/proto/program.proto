@@ -8,20 +8,23 @@ message Data {
     repeated Initialize_Instruction initialize_instruction_list = 3;
     repeated BetPlaced_Event bet_placed_event_list = 4;
     repeated PlaceBet_Instruction place_bet_instruction_list = 5;
+    repeated PoolMediaSet_Event pool_media_set_event_list = 6;
 }
+
 message PoolCreated_Event {
   string tx_hash = 1;
   uint64 pool_id = 2;
   string question = 3;
   repeated string options = 4;
   int64 bets_close_at = 5;
-  string image_url = 6;
-  string category = 7;
-  string creator_name = 8;
-  string creator_id = 9;
-  string closure_criteria = 10;
-  string closure_instructions = 11;
-  int64 created_at = 12;
+  string media_url = 6;
+  int32 media_type = 7;
+  string category = 8;
+  string creator_name = 9;
+  string creator_id = 10;
+  string closure_criteria = 11;
+  string closure_instructions = 12;
+  int64 created_at = 13;
 }
 
 message CreatePool_Instruction {
@@ -29,15 +32,16 @@ message CreatePool_Instruction {
     string question = 2;
     repeated string options = 3;
     int64 bets_close_at = 4;
-    string image_url = 5;
-    string category = 6;
-    string creator_name = 7;
-    string creator_id = 8;
-    string closure_criteria = 9;
-    string closure_instructions = 10;
-    string acct_betting_pools = 11;
-    string acct_pool = 12;
-    string acct_authority = 13;
+    string media_url = 5;
+    int32 media_type = 6;
+    string category = 7;
+    string creator_name = 8;
+    string creator_id = 9;
+    string closure_criteria = 10;
+    string closure_instructions = 11;
+    string acct_betting_pools = 12;
+    string acct_pool = 13;
+    string acct_authority = 14;
 }
 message Initialize_Instruction {
   string trx_hash = 1;
@@ -56,6 +60,13 @@ message BetPlaced_Event {
   uint64 amount = 6;
   int32 token_type = 7;
   int64 created_at = 8;
+}
+
+message PoolMediaSet_Event {
+  string tx_hash = 1;
+  uint64 pool_id = 2;
+  string media_url = 3;
+  int32 media_type = 4;
 }
 
 message PlaceBet_Instruction {

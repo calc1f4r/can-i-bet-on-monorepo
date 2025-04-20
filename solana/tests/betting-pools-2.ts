@@ -1,207 +1,26 @@
 import * as anchor from '@coral-xyz/anchor';
 import { Program } from '@coral-xyz/anchor';
-import {
-  ASSOCIATED_TOKEN_PROGRAM_ID,
-  TOKEN_PROGRAM_ID,
-  createAssociatedTokenAccountInstruction,
-  createMintToInstruction,
-  getAccount,
-  getAssociatedTokenAddress,
-  getOrCreateAssociatedTokenAccount,
-} from '@solana/spl-token';
+import { getOrCreateAssociatedTokenAccount } from '@solana/spl-token';
 import { expect } from 'chai';
 
 import { BettingPools2 } from '../target/types/betting_pools_2';
-import { getNextPoolAddress } from '../utils/get-next-pool-address';
 import { DEVNET_USDC_ADDRESS, getOrCreateBetPointsMint, isDevnet } from './create-token';
-
-// Flag to determine funding method for test accounts, used to get around airdrop rate limits in devnet.
-// If true will use an airdrop, if false will transfer from the payer to the new accounts
-const USE_AIRDROP = false;
-
-const BETTING_POOLS_SEED = Buffer.from('betting_pools_v7');
-export const POOL_SEED = Buffer.from('pool_v3');
-export const BET_SEED = Buffer.from('bet_v1');
-
-// Utility function to create a betting pool
-async function createBettingPool(
-  program: Program,
-  bettingPoolsAddress: anchor.web3.PublicKey,
-  authority: anchor.web3.PublicKey,
-  params: {
-    question: string;
-    options: string[];
-    betsCloseAt?: anchor.BN;
-    imageUrl?: string;
-    category?: string;
-    creatorName?: string;
-    creatorId?: string;
-    closureCriteria?: string;
-    closureInstructions?: string;
-  }
-): Promise {
-  // Get the current state to get the next pool ID
-  const bettingPoolsState = await program.account.bettingPoolsState.fetch(bettingPoolsAddress);
-  const poolId = bettingPoolsState.nextPoolId;
-
-  // Get the next pool address
-  const poolAddress = await getNextPoolAddress(program, bettingPoolsAddress);
-
-  // Default values
-  const betsCloseAt = params.betsCloseAt || new anchor.BN(Math.floor(Date.now() / 1000) + 86400); // 24 hours from now
-  const imageUrl = params.imageUrl || 'https://example.com/image.jpg';
-  const category = params.category || 'Crypto';
-  const creatorName = params.creatorName || 'Test Creator';
-  const creatorId = params.creatorId || 'test123';
-  const closureCriteria = params.closureCriteria || 'Default closure criteria';
-  const closureInstructions = params.closureInstructions || 'Default instructions';
-
-  // Create the pool
-  const tx = await program.methods
-    .createPool(
-      params.question,
-      params.options,
-      betsCloseAt,
-      imageUrl,
-      category,
-      creatorName,
-      creatorId,
-      closureCriteria,
-      closureInstructions
-    )
-    .accounts({
-      bettingPools: bettingPoolsAddress,
-      pool: poolAddress,
-      authority: authority,
-      systemProgram: anchor.web3.SystemProgram.programId,
-    })
-    .rpc();
-
-  return { poolAddress, poolId, tx };
-}
-
-// Helper function to create a user with funded bet points
-async function createFundedUser(
-  connection: anchor.web3.Connection,
-  payer: anchor.web3.Keypair,
-  betPointsMint: anchor.web3.PublicKey,
-  betPointsAmount: number = 2000 * 1e6 // 2000 BetPoints by default
-): Promise {
-  // Create a new keypair for the user
-  const user = anchor.web3.Keypair.generate();
-
-  // Fund the user with SOL
-  const solAmount = 0.11 * anchor.web3.LAMPORTS_PER_SOL;
-
-  if (USE_AIRDROP) {
-    // Request an airdrop of SOL for the user
-    const airdropSig = await connection.requestAirdrop(user.publicKey, solAmount);
-    const latestBlockhash = await connection.getLatestBlockhash();
-    await connection.confirmTransaction({
-      signature: airdropSig,
-      blockhash: latestBlockhash.blockhash,
-      lastValidBlockHeight: latestBlockhash.lastValidBlockHeight,
-    });
-    console.log(
-      `Airdropped ${
-        solAmount / anchor.web3.LAMPORTS_PER_SOL
-      } SOL to user ${user.publicKey.toString()}`
-    );
-  } else {
-    // Transfer SOL from the payer/authority account to the user
-    const transferIx = anchor.web3.SystemProgram.transfer({
-      fromPubkey: payer.publicKey,
-      toPubkey: user.publicKey,
-      lamports: solAmount,
-    });
-
-    const tx = new anchor.web3.Transaction().add(transferIx);
-    const latestBlockhash = await connection.getLatestBlockhash();
-    tx.recentBlockhash = latestBlockhash.blockhash;
-    tx.feePayer = payer.publicKey;
-    tx.sign(payer);
-    const sig = await connection.sendRawTransaction(tx.serialize());
-    await connection.confirmTransaction({
-      signature: sig,
-      blockhash: latestBlockhash.blockhash,
-      lastValidBlockHeight: latestBlockhash.lastValidBlockHeight,
-    });
-    console.log(
-      `Transferred ${
-        solAmount / anchor.web3.LAMPORTS_PER_SOL
-      } SOL from authority to user ${user.publicKey.toString()}`
-    );
-  }
-
-  // Get the associated token account address for this user
-  const associatedTokenAddress = await getAssociatedTokenAddress(betPointsMint, user.publicKey);
-
-  // Create the token account for the user
-  try {
-    const createAccountIx = createAssociatedTokenAccountInstruction(
-      payer.publicKey,
-      associatedTokenAddress,
-      user.publicKey,
-      betPointsMint
-    );
-
-    const tx = new anchor.web3.Transaction().add(createAccountIx);
-    const latestBlockhash = await connection.getLatestBlockhash();
-    tx.recentBlockhash = latestBlockhash.blockhash;
-    tx.feePayer = payer.publicKey;
-    tx.sign(payer);
-    const sig = await connection.sendRawTransaction(tx.serialize());
-    await connection.confirmTransaction({
-      signature: sig,
-      blockhash: latestBlockhash.blockhash,
-      lastValidBlockHeight: latestBlockhash.lastValidBlockHeight,
-    });
-    console.log(`Created token account for user: ${associatedTokenAddress.toString()}`);
-  } catch (e) {
-    console.log('Token account may already exist:', e);
-  }
-
-  // Mint BetPoints to the user
-  try {
-    const mintIx = createMintToInstruction(
-      betPointsMint,
-      associatedTokenAddress,
-      payer.publicKey,
-      betPointsAmount
-    );
-
-    const tx = new anchor.web3.Transaction().add(mintIx);
-    const latestBlockhash = await connection.getLatestBlockhash();
-    tx.recentBlockhash = latestBlockhash.blockhash;
-    tx.feePayer = payer.publicKey;
-    tx.sign(payer);
-    const sig = await connection.sendRawTransaction(tx.serialize());
-    await connection.confirmTransaction({
-      signature: sig,
-      blockhash: latestBlockhash.blockhash,
-      lastValidBlockHeight: latestBlockhash.lastValidBlockHeight,
-    });
-    console.log(`Minted ${betPointsAmount / 1e6} BetPoints to user`);
-
-    // Verify the balance
-    const accountInfo = await getAccount(connection, associatedTokenAddress);
-    console.log(`Token account balance verified: ${accountInfo.amount.toString()}`);
-  } catch (e) {
-    console.error('Error minting tokens:', e);
-    throw e;
-  }
-
-  return {
-    user,
-    betPointsAccount: associatedTokenAddress,
-  };
-}
+import {
+  BETTING_POOLS_SEED,
+  MediaType,
+  createBettingPool,
+  createFundedUser,
+  lamportsToTokens,
+  placeBet,
+  returnUnusedAssets,
+  tokensToLamports,
+} from './utils';
 
 describe('betting-pools-2', () => {
   // Configure the client to use the local cluster.
   anchor.setProvider(anchor.AnchorProvider.env());
 
-  const program = anchor.workspace.bettingPools2 as Program;
+  const program = anchor.workspace.bettingPools2 as Program<BettingPools2>;
   const wallet = anchor.AnchorProvider.env().wallet;
   const connection = anchor.getProvider().connection;
 
@@ -215,9 +34,6 @@ describe('betting-pools-2', () => {
   let bettingPoolsBump: number;
   let poolAddress: anchor.web3.PublicKey;
   let poolId: anchor.BN;
-
-  // Store our users for the placeBet test
-  const users: Array = [];
 
   beforeEach(async () => {
     console.log('beforeEach section');
@@ -311,12 +127,33 @@ describe('betting-pools-2', () => {
       const question = 'Will BTC reach $200k by the end of 2025?';
       const options = ['Yes', 'No'];
       const betsCloseAt = new anchor.BN(Math.floor(Date.now() / 1000) + 86400); // 24 hours from now
-      const imageUrl = 'https://example.com/image.jpg';
+      const mediaUrl =
+        'https://external-content.duckduckgo.com/iu/?u=https%3A%2F%2Fi.kym-cdn.com%2Fphotos%2Fimages%2Fnewsfeed%2F000%2F481%2F115%2F4cd.gif&f=1&nofb=1&ipt=e9b3647ed72f4954336041c98c5c7dba53f2c8011dd907e3d3d829d4664194d8';
+      const mediaType = MediaType.Image;
       const category = 'Crypto';
       const creatorName = 'Satoshi';
       const creatorId = 'satoshi123';
       const closureCriteria = 'The price of BTC exceeds $100,000 USD on any major exchange.';
       const closureInstructions = 'Check the price on Coinbase, Binance, and Kraken.';
+
+      // Create the program token account (to be used by all bets)
+      const programTokenSeed = Buffer.from('program_token');
+      const [programTokenAuthority] = anchor.web3.PublicKey.findProgramAddressSync(
+        [programTokenSeed],
+        program.programId
+      );
+
+      // Create the program token account
+      console.log('Creating program token account...');
+      const programTokenAccount = await getOrCreateAssociatedTokenAccount(
+        connection,
+        payerKeypair,
+        betPointsMint,
+        programTokenAuthority,
+        true // allowOwnerOffCurve
+      );
+
+      console.log(`Created program token account: ${programTokenAccount.address.toString()}`);
 
       // Create the pool using our utility function
       const { poolAddress, poolId, tx } = await createBettingPool(
@@ -327,7 +164,8 @@ describe('betting-pools-2', () => {
           question,
           options,
           betsCloseAt,
-          imageUrl,
+          mediaUrl,
+          mediaType,
           category,
           creatorName,
           creatorId,
@@ -349,7 +187,8 @@ describe('betting-pools-2', () => {
       expect(poolAccount.options).to.deep.equal(options);
       expect(poolAccount.betsCloseAt.toString()).to.equal(betsCloseAt.toString());
       expect('pending' in poolAccount.status).to.be.true; //TODO This feels sloppy, it's searching keys but I want to compare to an enum type
-      expect(poolAccount.imageUrl).to.equal(imageUrl);
+      expect(poolAccount.mediaUrl).to.equal(mediaUrl);
+      expect('image' in poolAccount.mediaType).to.be.true; // Check that it's the Image type
       expect(poolAccount.category).to.equal(category);
       expect(poolAccount.creatorName).to.equal(creatorName);
       expect(poolAccount.creatorId).to.equal(creatorId);
@@ -368,20 +207,22 @@ describe('betting-pools-2', () => {
   });
 
   it('placeBet creates bet accounts with correct data and updates pool totals', async () => {
+    const testUsers = []; // Store users for cleanup
     try {
       // Get the current betting pools state
       const bettingPoolsState = await program.account.bettingPoolsState.fetch(bettingPoolsAddress);
       console.log('Betting pools state:', bettingPoolsState);
 
-      // Create a pool for testing using our utility function
-      const { poolAddress: newPoolAddress, poolId } = await createBettingPool(
+      // Create the pool for testing using our utility function
+      const { poolAddress: newPoolAddress, poolId: newPoolId } = await createBettingPool(
         program,
         bettingPoolsAddress,
         wallet.publicKey,
         {
           question: 'Will ETH reach $10k by the end of 2025?',
           options: ['Yes', 'No'],
-          imageUrl: 'https://example.com/eth.jpg',
+          mediaUrl: 'https://example.com/eth.jpg',
+          mediaType: MediaType.Image,
           category: 'Crypto',
           creatorName: 'Vitalik',
           creatorId: 'vitalik123',
@@ -390,38 +231,11 @@ describe('betting-pools-2', () => {
         }
       );
 
-      console.log('Created new pool with ID:', poolId.toString());
+      console.log('Created new pool with ID:', newPoolId.toString());
       poolAddress = newPoolAddress;
+      poolId = newPoolId;
 
-      // Create a funded user for betting using our helper function
-      const { user: bettor, betPointsAccount: bettorTokenAccount } = await createFundedUser(
-        connection,
-        payerKeypair,
-        betPointsMint,
-        200_000_000 // 200 tokens
-      );
-
-      console.log(`Created funded bettor: ${bettor.publicKey.toString()}`);
-      console.log(`With token account: ${bettorTokenAccount.toString()}`);
-
-      // Define bet parameters
-      const optionIndex = 0;
-      const amount = new anchor.BN(100_000_000); // 100 tokens
-      const tokenType = { points: {} }; // Use points token type
-
-      // Find the bet account PDA
-      const nextBetId = bettingPoolsState.nextBetId;
-
-      const [betAddress] = anchor.web3.PublicKey.findProgramAddressSync(
-        [BET_SEED, poolId.toBuffer('le', 8), nextBetId.toBuffer('le', 8)],
-        program.programId
-      );
-      console.log('Bet PDA address:', betAddress.toString());
-
-      // We need to create the program token account to receive tokens
-      // This would typically be a PDA with authority set to program
-      // But for test purposes, we'll create a regular token account owned by the program
-      // Find the PDA for the program token account
+      // Create the program token account (to be used by all bets)
       const programTokenSeed = Buffer.from('program_token');
       const [programTokenAuthority] = anchor.web3.PublicKey.findProgramAddressSync(
         [programTokenSeed],
@@ -447,60 +261,125 @@ describe('betting-pools-2', () => {
         initialPool.pointsBetTotals.map(t => t.toString())
       );
 
-      // Execute the placeBet instruction
-      console.log('Placing bet...');
-      const betTx = await program.methods
-        .placeBet(new anchor.BN(optionIndex), amount, tokenType)
-        .accounts({
-          bettingPools: bettingPoolsAddress,
-          pool: poolAddress,
-          bet: betAddress,
-          bettor: bettor.publicKey,
-          bettorTokenAccount: bettorTokenAccount,
-          programTokenAccount: programTokenAccount.address,
-          tokenProgram: TOKEN_PROGRAM_ID,
-          associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
-          systemProgram: anchor.web3.SystemProgram.programId,
-          rent: anchor.web3.SYSVAR_RENT_PUBKEY,
-        })
-        .signers([bettor])
-        .rpc();
+      // Predetermine the bet amounts and options for each user
+      // This allows us to know exactly how many tokens each user will need
+      const betPlans = [
+        // User 1 bets
+        { userIndex: 0, optionIndex: 0, tokenAmount: 200 }, // 200 tokens on Yes
+        // User 2 bets
+        { userIndex: 1, optionIndex: 1, tokenAmount: 350 }, // 350 tokens on No
+        { userIndex: 1, optionIndex: 0, tokenAmount: 150 }, // 150 tokens on Yes
+        // User 3 bets
+        { userIndex: 2, optionIndex: 1, tokenAmount: 400 }, // 400 tokens on No
+      ];
 
-      console.log(`Bet placed with transaction: ${betTx}`);
+      // Calculate total tokens needed for each user
+      const tokensNeededPerUser = Array(3).fill(0);
+      for (const plan of betPlans) {
+        tokensNeededPerUser[plan.userIndex] += plan.tokenAmount;
+      }
 
-      // Fetch and verify the bet data
-      const betAccount = await program.account.bet.fetch(betAddress);
-      console.log('Bet account data:', betAccount);
+      // Create users with exactly the amount of tokens they need
+      const usersArray = [];
+      for (let i = 0; i < tokensNeededPerUser.length; i++) {
+        const tokensNeeded = tokensNeededPerUser[i];
+        console.log(`Creating user ${i + 1} with ${tokensNeeded} tokens`);
 
-      // Verify bet data
-      expect(betAccount.id.toString()).to.equal(nextBetId.toString());
-      expect(betAccount.owner.toString()).to.equal(bettor.publicKey.toString());
-      expect(betAccount.option.toNumber()).to.equal(optionIndex);
-      expect(betAccount.amount.toString()).to.equal(amount.toString());
-      expect(betAccount.poolId.toString()).to.equal(poolId.toString());
-      expect('points' in betAccount.tokenType).to.be.true;
+        const fundedUser = await createFundedUser(
+          connection,
+          payerKeypair,
+          betPointsMint,
+          tokensNeeded
+        );
 
-      // Verify pool totals were updated
-      const updatedPool = await program.account.pool.fetch(poolAddress);
+        usersArray.push(fundedUser);
+        testUsers.push(fundedUser); // Also store in cleanup array
+        console.log(
+          `Created user ${i + 1}: ${fundedUser.user.publicKey.toString()} with ${tokensNeeded} tokens`
+        );
+      }
+
+      // Place bets according to the plan
+      console.log(`Placing ${betPlans.length} predetermined bets...`);
+      let nextBetId = bettingPoolsState.nextBetId;
+      const optionTotals = [0, 0]; // Track total amounts for each option
+
+      for (let i = 0; i < betPlans.length; i++) {
+        const plan = betPlans[i];
+        const { userIndex, optionIndex, tokenAmount } = plan;
+        const { user: bettor, betPointsAccount: bettorTokenAccount } = usersArray[userIndex];
+
+        console.log(
+          `Bet ${i + 1}: User ${userIndex + 1} betting ${tokenAmount} tokens on option ${optionIndex} (${initialPool.options[optionIndex]})`
+        );
+
+        // Place the bet using the utility function
+        const { transactionSignature, betAccount } = await placeBet(
+          program,
+          connection,
+          bettingPoolsAddress,
+          poolAddress,
+          poolId,
+          bettor,
+          bettorTokenAccount,
+          programTokenAccount.address,
+          optionIndex,
+          tokenAmount,
+          nextBetId
+        );
+
+        console.log(`Bet placed with transaction: ${transactionSignature}`);
+
+        // Basic verification
+        expect(betAccount.id.toString()).to.equal(nextBetId.toString());
+        expect(betAccount.owner.toString()).to.equal(bettor.publicKey.toString());
+        expect(betAccount.option.toNumber()).to.equal(optionIndex);
+        expect(betAccount.amount.toString()).to.equal(
+          new anchor.BN(tokensToLamports(tokenAmount)).toString()
+        );
+        expect(betAccount.poolId.toString()).to.equal(poolId.toString());
+        expect('points' in betAccount.tokenType).to.be.true;
+
+        // Update running totals
+        optionTotals[optionIndex] += tokensToLamports(tokenAmount);
+
+        // Increment bet ID for next iteration
+        nextBetId = new anchor.BN(nextBetId.toNumber() + 1);
+      }
+
+      // Verify final pool totals
+      const finalPool = await program.account.pool.fetch(poolAddress);
+      console.log('\nFinal bet summary:');
+      console.log(`Total bets placed: ${betPlans.length}`);
       console.log(
-        'Updated pool point bet totals:',
-        updatedPool.pointsBetTotals.map(t => t.toString())
+        `Final pool point bet totals: [${finalPool.pointsBetTotals.map(t => t.toString())}]`
       );
+      console.log(`Expected totals: [${optionTotals[0]}, ${optionTotals[1]}]`);
 
-      // Verify the points bet total was updated for the correct option
-      expect(updatedPool.pointsBetTotals[optionIndex].toString()).to.equal(amount.toString());
-      // For BN comparison, we need to compare string representations to avoid issues with BN objects
-      expect(updatedPool.pointsBetTotals[1 - optionIndex].toString()).to.equal('0'); // Other option should still be zero
+      // Verify the pool totals match our expected totals
+      expect(finalPool.pointsBetTotals[0].toString()).to.equal(optionTotals[0].toString());
+      expect(finalPool.pointsBetTotals[1].toString()).to.equal(optionTotals[1].toString());
 
-      // Verify betting pools nextBetId was incremented
+      // Verify betting pools nextBetId was incremented correctly
       const updatedBettingPools =
         await program.account.bettingPoolsState.fetch(bettingPoolsAddress);
-      expect(updatedBettingPools.nextBetId.toNumber()).to.equal(nextBetId.toNumber() + 1);
+      expect(updatedBettingPools.nextBetId.toNumber()).to.equal(
+        bettingPoolsState.nextBetId.toNumber() + betPlans.length
+      );
 
-      console.log('Successfully verified placeBet functionality with real tokens');
+      console.log('Successfully verified multiple bets from different users with real tokens');
     } catch (e) {
       console.error('Error in placeBet test:', e);
       throw e;
+    } finally {
+      // Return unused tokens and SOL back to authority
+      if (testUsers.length > 0) {
+        try {
+          await returnUnusedAssets(connection, testUsers, betPointsMint, wallet.publicKey);
+        } catch (cleanupError) {
+          console.error('Error during cleanup:', cleanupError);
+        }
+      }
     }
   });
 });

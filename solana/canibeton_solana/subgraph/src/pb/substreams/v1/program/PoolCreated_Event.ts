@@ -26,24 +26,27 @@ export class PoolCreated_Event {
     writer.int64(message.betsCloseAt);
 
     writer.uint32(50);
-    writer.string(message.imageUrl);
+    writer.string(message.mediaUrl);
 
-    writer.uint32(58);
-    writer.string(message.category);
+    writer.uint32(56);
+    writer.int32(message.mediaType);
 
     writer.uint32(66);
-    writer.string(message.creatorName);
+    writer.string(message.category);
 
     writer.uint32(74);
-    writer.string(message.creatorId);
+    writer.string(message.creatorName);
 
     writer.uint32(82);
-    writer.string(message.closureCriteria);
+    writer.string(message.creatorId);
 
     writer.uint32(90);
+    writer.string(message.closureCriteria);
+
+    writer.uint32(98);
     writer.string(message.closureInstructions);
 
-    writer.uint32(96);
+    writer.uint32(104);
     writer.int64(message.createdAt);
   }
 
@@ -75,30 +78,34 @@ export class PoolCreated_Event {
           break;
 
         case 6:
-          message.imageUrl = reader.string();
+          message.mediaUrl = reader.string();
           break;
 
         case 7:
-          message.category = reader.string();
+          message.mediaType = reader.int32();
           break;
 
         case 8:
-          message.creatorName = reader.string();
+          message.category = reader.string();
           break;
 
         case 9:
-          message.creatorId = reader.string();
+          message.creatorName = reader.string();
           break;
 
         case 10:
-          message.closureCriteria = reader.string();
+          message.creatorId = reader.string();
           break;
 
         case 11:
-          message.closureInstructions = reader.string();
+          message.closureCriteria = reader.string();
           break;
 
         case 12:
+          message.closureInstructions = reader.string();
+          break;
+
+        case 13:
           message.createdAt = reader.int64();
           break;
 
@@ -116,7 +123,8 @@ export class PoolCreated_Event {
   question: string;
   options: Array<string>;
   betsCloseAt: i64;
-  imageUrl: string;
+  mediaUrl: string;
+  mediaType: i32;
   category: string;
   creatorName: string;
   creatorId: string;
@@ -130,7 +138,8 @@ export class PoolCreated_Event {
     question: string = '',
     options: Array<string> = [],
     betsCloseAt: i64 = 0,
-    imageUrl: string = '',
+    mediaUrl: string = '',
+    mediaType: i32 = 0,
     category: string = '',
     creatorName: string = '',
     creatorId: string = '',
@@ -143,7 +152,8 @@ export class PoolCreated_Event {
     this.question = question;
     this.options = options;
     this.betsCloseAt = betsCloseAt;
-    this.imageUrl = imageUrl;
+    this.mediaUrl = mediaUrl;
+    this.mediaType = mediaType;
     this.category = category;
     this.creatorName = creatorName;
     this.creatorId = creatorId;

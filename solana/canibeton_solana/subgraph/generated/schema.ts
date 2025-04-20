@@ -258,8 +258,8 @@ export class Pool extends Entity {
     this.set("closureInstructions", Value.fromString(value));
   }
 
-  get imageUrl(): string {
-    let value = this.get("imageUrl");
+  get mediaUrl(): string {
+    let value = this.get("mediaUrl");
     if (!value || value.kind == ValueKind.NULL) {
       throw new Error("Cannot return null for a required field.");
     } else {
@@ -267,8 +267,21 @@ export class Pool extends Entity {
     }
   }
 
-  set imageUrl(value: string) {
-    this.set("imageUrl", Value.fromString(value));
+  set mediaUrl(value: string) {
+    this.set("mediaUrl", Value.fromString(value));
+  }
+
+  get mediaType(): string {
+    let value = this.get("mediaType");
+    if (!value || value.kind == ValueKind.NULL) {
+      throw new Error("Cannot return null for a required field.");
+    } else {
+      return value.toString();
+    }
+  }
+
+  set mediaType(value: string) {
+    this.set("mediaType", Value.fromString(value));
   }
 
   get twitterPostId(): string {
@@ -408,8 +421,8 @@ export class PoolCreated extends Entity {
     this.set("createdAt", Value.fromBigInt(value));
   }
 
-  get imageUrl(): string {
-    let value = this.get("imageUrl");
+  get mediaUrl(): string {
+    let value = this.get("mediaUrl");
     if (!value || value.kind == ValueKind.NULL) {
       throw new Error("Cannot return null for a required field.");
     } else {
@@ -417,8 +430,21 @@ export class PoolCreated extends Entity {
     }
   }
 
-  set imageUrl(value: string) {
-    this.set("imageUrl", Value.fromString(value));
+  set mediaUrl(value: string) {
+    this.set("mediaUrl", Value.fromString(value));
+  }
+
+  get mediaType(): string {
+    let value = this.get("mediaType");
+    if (!value || value.kind == ValueKind.NULL) {
+      throw new Error("Cannot return null for a required field.");
+    } else {
+      return value.toString();
+    }
+  }
+
+  set mediaType(value: string) {
+    this.set("mediaType", Value.fromString(value));
   }
 
   get category(): string {
@@ -841,6 +867,117 @@ export class BetPlaced extends Entity {
     } else {
       this.set("bet", Value.fromString(<string>value));
     }
+  }
+
+  get pool(): string | null {
+    let value = this.get("pool");
+    if (!value || value.kind == ValueKind.NULL) {
+      return null;
+    } else {
+      return value.toString();
+    }
+  }
+
+  set pool(value: string | null) {
+    if (!value) {
+      this.unset("pool");
+    } else {
+      this.set("pool", Value.fromString(<string>value));
+    }
+  }
+}
+
+export class PoolMediaSet extends Entity {
+  constructor(id: string) {
+    super();
+    this.set("id", Value.fromString(id));
+  }
+
+  save(): void {
+    let id = this.get("id");
+    assert(id != null, "Cannot save PoolMediaSet entity without an ID");
+    if (id) {
+      assert(
+        id.kind == ValueKind.STRING,
+        `Entities of type PoolMediaSet must have an ID of type String but the id '${id.displayData()}' is of type ${id.displayKind()}`,
+      );
+      store.set("PoolMediaSet", id.toString(), this);
+    }
+  }
+
+  static loadInBlock(id: string): PoolMediaSet | null {
+    return changetype<PoolMediaSet | null>(
+      store.get_in_block("PoolMediaSet", id),
+    );
+  }
+
+  static load(id: string): PoolMediaSet | null {
+    return changetype<PoolMediaSet | null>(store.get("PoolMediaSet", id));
+  }
+
+  get id(): string {
+    let value = this.get("id");
+    if (!value || value.kind == ValueKind.NULL) {
+      throw new Error("Cannot return null for a required field.");
+    } else {
+      return value.toString();
+    }
+  }
+
+  set id(value: string) {
+    this.set("id", Value.fromString(value));
+  }
+
+  get poolId(): BigInt {
+    let value = this.get("poolId");
+    if (!value || value.kind == ValueKind.NULL) {
+      throw new Error("Cannot return null for a required field.");
+    } else {
+      return value.toBigInt();
+    }
+  }
+
+  set poolId(value: BigInt) {
+    this.set("poolId", Value.fromBigInt(value));
+  }
+
+  get mediaUrl(): string {
+    let value = this.get("mediaUrl");
+    if (!value || value.kind == ValueKind.NULL) {
+      throw new Error("Cannot return null for a required field.");
+    } else {
+      return value.toString();
+    }
+  }
+
+  set mediaUrl(value: string) {
+    this.set("mediaUrl", Value.fromString(value));
+  }
+
+  get mediaType(): string {
+    let value = this.get("mediaType");
+    if (!value || value.kind == ValueKind.NULL) {
+      throw new Error("Cannot return null for a required field.");
+    } else {
+      return value.toString();
+    }
+  }
+
+  set mediaType(value: string) {
+    this.set("mediaType", Value.fromString(value));
+  }
+
+  get transactionHash(): string {
+    let value = this.get("transactionHash");
+    if (!value || value.kind == ValueKind.NULL) {
+      throw new Error("Cannot return null for a required field.");
+    } else {
+      return value.toString();
+    }
+  }
+
+  set transactionHash(value: string) {
+    this.set("transactionHash", Value.fromString(value));
   }
 
   get pool(): string | null {

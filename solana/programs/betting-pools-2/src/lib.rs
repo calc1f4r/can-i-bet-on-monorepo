@@ -2,7 +2,7 @@ use anchor_lang::prelude::*;
 use anchor_spl::associated_token::AssociatedToken;
 use anchor_spl::token::{self, Token, TokenAccount, Transfer};
 
-declare_id!("9nW58a3uYAveyKAxpytoSwobwGTMm4QHJwzKiiGK7RXK");
+declare_id!("E3V6czvYpjrdZVTLwFKzrw3GhCvH1LXKijADCkahw7QF");
 
 pub const BETTING_POOLS_SEED: &[u8] = b"betting_pools_v7";
 pub const POOL_SEED: &[u8] = b"pool_v3";
@@ -56,7 +56,8 @@ pub mod betting_pools_2 {
         question: String,
         options: [String; 2],
         bets_close_at: i64,
-        image_url: String,
+        media_url: String,
+        media_type: MediaType,
         category: String,
         creator_name: String,
         creator_id: String,
@@ -90,7 +91,8 @@ pub mod betting_pools_2 {
         pool.status = PoolStatus::Pending;
         pool.is_draw = false;
         pool.created_at = clock.unix_timestamp;
-        pool.image_url = image_url;
+        pool.media_url = media_url;
+        pool.media_type = media_type;
         pool.category = category;
         pool.creator_name = creator_name;
         pool.creator_id = creator_id;
@@ -103,7 +105,8 @@ pub mod betting_pools_2 {
             question: pool.question.clone(),
             options: pool.options.clone(),
             bets_close_at: pool.bets_close_at.clone(),
-            image_url: pool.image_url.clone(),
+            media_url: pool.media_url.clone(),
+            media_type: pool.media_type,
             category: pool.category.clone(),
             creator_name: pool.creator_name.clone(),
             creator_id: pool.creator_id.clone(),
@@ -203,6 +206,28 @@ pub mod betting_pools_2 {
 
         Ok(())
     }
+
+    /// Update the media URL and type for a pool
+    pub fn set_media(
+        ctx: Context<SetMedia>,
+        media_url: String,
+        media_type: MediaType,
+    ) -> Result<()> {
+        let pool = &mut ctx.accounts.pool;
+        
+        // Update the media information
+        pool.media_url = media_url.clone();
+        pool.media_type = media_type;
+        
+        // Emit the PoolMediaSet event
+        emit!(PoolMediaSet {
+            pool_id: pool.id,
+            media_url,
+            media_type,
+        });
+        
+        Ok(())
+    }
 }
 
 // Initialize context
@@ -242,7 +267,9 @@ pub struct BettingPoolsState {
 #[instruction(
     question: String,
     options: [String; 2],
-    bets_close_at: i64
+    bets_close_at: i64,
+    media_url: String,
+    media_type: MediaType
 )]
 pub struct CreatePool<'info> {
     #[account(
@@ -321,6 +348,17 @@ pub enum TokenType {
     Points,
 }
 
+#[derive(AnchorSerialize, AnchorDeserialize, Clone, Copy, PartialEq, Eq, InitSpace)]
+pub enum MediaType {
+    X,
+    TikTok,
+    Instagram,
+    Facebook,
+    Image,
+    Video,
+    ExternalLink,
+}
+
 #[account]
 #[derive(InitSpace)]
 pub struct Pool {
@@ -338,7 +376,8 @@ pub struct Pool {
     pub is_draw: bool,
     pub created_at: i64,
     #[max_len(200)]
-    pub image_url: String,
+    pub media_url: String,
+    pub media_type: MediaType,
     #[max_len(25)]
     pub category: String,
     #[max_len(50)]
@@ -360,7 +399,8 @@ pub struct PoolCreated {
     pub question: String,
     pub options: [String; 2],
     pub bets_close_at: i64,
-    pub image_url: String,
+    pub media_url: String,
+    pub media_type: MediaType,
     pub category: String,
     pub creator_name: String,
     pub creator_id: String,
@@ -387,6 +427,13 @@ pub struct PoolClosed {
     pub decision_time: i64,
 }
 
+#[event]
+pub struct PoolMediaSet {
+    pub pool_id: u64,
+    pub media_url: String,
+    pub media_type: MediaType,
+}
+
 #[account]
 #[derive(InitSpace)]
 pub struct Bet {
@@ -401,6 +448,22 @@ pub struct Bet {
     pub outcome: BetOutcome,
     pub token_type: TokenType,
     pub bump: u8,
+}
+
+#[derive(Accounts)]
+#[instruction(option_index: u64, amount: u64, token_type: TokenType)]
+pub struct SetMedia<'info> {
+    #[account(
+        mut,
+        seeds = [POOL_SEED, pool.id.to_le_bytes().as_ref()],
+        bump,
+    )]
+    pub pool: Account<'info, Pool>,
+    
+    #[account(mut)]
+    pub authority: Signer<'info>,
+    
+    pub system_program: Program<'info, System>,
 }
 
 #[derive(Accounts)]
