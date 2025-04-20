@@ -4,19 +4,20 @@ import {
   ASSOCIATED_TOKEN_PROGRAM_ID,
   TOKEN_PROGRAM_ID,
   createAssociatedTokenAccountInstruction,
-  createMint,
   createMintToInstruction,
   getAccount,
   getAssociatedTokenAddress,
   getOrCreateAssociatedTokenAccount,
-  mintTo,
 } from '@solana/spl-token';
-import * as token from '@solana/spl-token';
 import { expect } from 'chai';
 
 import { BettingPools2 } from '../target/types/betting_pools_2';
 import { getNextPoolAddress } from '../utils/get-next-pool-address';
-import { getOrCreateBetPointsMint } from './create-token';
+import { DEVNET_USDC_ADDRESS, getOrCreateBetPointsMint, isDevnet } from './create-token';
+
+// Flag to determine funding method for test accounts, used to get around airdrop rate limits in devnet.
+// If true will use an airdrop, if false will transfer from the payer to the new accounts
+const USE_AIRDROP = false;
 
 const BETTING_POOLS_SEED = Buffer.from('betting_pools_v7');
 export const POOL_SEED = Buffer.from('pool_v3');
@@ -24,7 +25,7 @@ export const BET_SEED = Buffer.from('bet_v1');
 
 // Utility function to create a betting pool
 async function createBettingPool(
-  program: Program<BettingPools2>,
+  program: Program,
   bettingPoolsAddress: anchor.web3.PublicKey,
   authority: anchor.web3.PublicKey,
   params: {
@@ -38,11 +39,7 @@ async function createBettingPool(
     closureCriteria?: string;
     closureInstructions?: string;
   }
-): Promise<{
-  poolAddress: anchor.web3.PublicKey;
-  poolId: anchor.BN;
-  tx: string;
-}> {
+): Promise {
   // Get the current state to get the next pool ID
   const bettingPoolsState = await program.account.bettingPoolsState.fetch(bettingPoolsAddress);
   const poolId = bettingPoolsState.nextPoolId;
@@ -89,25 +86,52 @@ async function createFundedUser(
   payer: anchor.web3.Keypair,
   betPointsMint: anchor.web3.PublicKey,
   betPointsAmount: number = 2000 * 1e6 // 2000 BetPoints by default
-): Promise<{
-  user: anchor.web3.Keypair;
-  betPointsAccount: anchor.web3.PublicKey;
-}> {
+): Promise {
   // Create a new keypair for the user
   const user = anchor.web3.Keypair.generate();
 
-  // Request an airdrop of 0.11 SOL for the user
-  const airdropSig = await connection.requestAirdrop(
-    user.publicKey,
-    0.11 * anchor.web3.LAMPORTS_PER_SOL
-  );
-  const latestBlockhash = await connection.getLatestBlockhash();
-  await connection.confirmTransaction({
-    signature: airdropSig,
-    blockhash: latestBlockhash.blockhash,
-    lastValidBlockHeight: latestBlockhash.lastValidBlockHeight,
-  });
-  console.log(`Airdropped 0.11 SOL to user ${user.publicKey.toString()}`);
+  // Fund the user with SOL
+  const solAmount = 0.11 * anchor.web3.LAMPORTS_PER_SOL;
+
+  if (USE_AIRDROP) {
+    // Request an airdrop of SOL for the user
+    const airdropSig = await connection.requestAirdrop(user.publicKey, solAmount);
+    const latestBlockhash = await connection.getLatestBlockhash();
+    await connection.confirmTransaction({
+      signature: airdropSig,
+      blockhash: latestBlockhash.blockhash,
+      lastValidBlockHeight: latestBlockhash.lastValidBlockHeight,
+    });
+    console.log(
+      `Airdropped ${
+        solAmount / anchor.web3.LAMPORTS_PER_SOL
+      } SOL to user ${user.publicKey.toString()}`
+    );
+  } else {
+    // Transfer SOL from the payer/authority account to the user
+    const transferIx = anchor.web3.SystemProgram.transfer({
+      fromPubkey: payer.publicKey,
+      toPubkey: user.publicKey,
+      lamports: solAmount,
+    });
+
+    const tx = new anchor.web3.Transaction().add(transferIx);
+    const latestBlockhash = await connection.getLatestBlockhash();
+    tx.recentBlockhash = latestBlockhash.blockhash;
+    tx.feePayer = payer.publicKey;
+    tx.sign(payer);
+    const sig = await connection.sendRawTransaction(tx.serialize());
+    await connection.confirmTransaction({
+      signature: sig,
+      blockhash: latestBlockhash.blockhash,
+      lastValidBlockHeight: latestBlockhash.lastValidBlockHeight,
+    });
+    console.log(
+      `Transferred ${
+        solAmount / anchor.web3.LAMPORTS_PER_SOL
+      } SOL from authority to user ${user.publicKey.toString()}`
+    );
+  }
 
   // Get the associated token account address for this user
   const associatedTokenAddress = await getAssociatedTokenAddress(betPointsMint, user.publicKey);
@@ -177,7 +201,7 @@ describe('betting-pools-2', () => {
   // Configure the client to use the local cluster.
   anchor.setProvider(anchor.AnchorProvider.env());
 
-  const program = anchor.workspace.bettingPools2 as Program<BettingPools2>;
+  const program = anchor.workspace.bettingPools2 as Program;
   const wallet = anchor.AnchorProvider.env().wallet;
   const connection = anchor.getProvider().connection;
 
@@ -193,10 +217,7 @@ describe('betting-pools-2', () => {
   let poolId: anchor.BN;
 
   // Store our users for the placeBet test
-  const users: Array<{
-    user: anchor.web3.Keypair;
-    betPointsAccount: anchor.web3.PublicKey;
-  }> = [];
+  const users: Array = [];
 
   beforeEach(async () => {
     console.log('beforeEach section');
@@ -212,9 +233,16 @@ describe('betting-pools-2', () => {
       console.log(`Airdropped 1 SOL to payer ${payerKeypair.publicKey.toString()}`);
     }
 
-    // Using a fake USDC mint (we won't mint any tokens)
-    usdcMint = anchor.web3.Keypair.generate().publicKey;
-    console.log('Created fake USDC mint for initialization:', usdcMint.toString());
+    // Set up USDC mint based on environment
+    if (isDevnet()) {
+      // Use real USDC address on devnet
+      usdcMint = new anchor.web3.PublicKey(DEVNET_USDC_ADDRESS);
+      console.log('Using real USDC mint on devnet:', usdcMint.toString());
+    } else {
+      // Create a fake USDC mint for localnet (we won't mint any tokens)
+      usdcMint = anchor.web3.Keypair.generate().publicKey;
+      console.log('Created fake USDC mint for localnet:', usdcMint.toString());
+    }
 
     // Get or create a real SPL token for bet points
     betPointsMint = await getOrCreateBetPointsMint();

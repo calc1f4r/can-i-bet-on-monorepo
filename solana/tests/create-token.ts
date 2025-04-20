@@ -7,6 +7,41 @@ import {
 } from '@solana/spl-token';
 import { expect } from 'chai';
 import fs from 'fs';
+import path from 'path';
+
+// Network and Token Configuration
+// Function to dynamically detect if we're on devnet based on the RPC endpoint
+export function isDevnet(): boolean {
+  const provider = anchor.AnchorProvider.env();
+  const endpoint = provider.connection.rpcEndpoint.toLowerCase();
+
+  // Check if we're on a local network
+  if (endpoint.includes('localhost') || endpoint.includes('127.0.0.1')) {
+    console.log('Detected localnet environment');
+    return false;
+  }
+
+  // Check if we're on devnet
+  if (endpoint.includes('devnet')) {
+    console.log('Detected devnet environment');
+    return true;
+  }
+
+  // Default to localnet if we can't determine
+  console.log(`Could not determine network from endpoint: ${endpoint}, assuming localnet`);
+  return false;
+}
+
+// Token Addresses
+// For bet points token:
+// - Set to null to deploy a new token on test run
+// - Set to a specific address to use an existing token
+export const DEVNET_BET_POINTS_ADDRESS = 'CkHdjk2V3bGXH8n7xG7mxvUxFeCxMsDJoGTmgpmcYbBs';
+export const LOCALNET_BET_POINTS_ADDRESS = null;
+
+// USDC addresses
+export const DEVNET_USDC_ADDRESS = '4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU'; // Real USDC on devnet
+export const LOCALNET_USDC_ADDRESS = null; // We'll create a mock USDC on localnet
 
 // Constants for SPL token
 const TOKEN_NAME = 'Betting Points';
@@ -14,12 +49,8 @@ const TOKEN_SYMBOL = 'BPT';
 const TOKEN_DECIMALS = 6; // Match USDC decimals to make our lives easier
 const TOKEN_INITIAL_SUPPLY = 1_000_000 * Math.pow(10, TOKEN_DECIMALS); // 1 million tokens
 
+// Will be set once we determine the network
 export let existingMintAddress: anchor.web3.PublicKey | null = null;
-// Devnet points token
-// export let existingMintAddress: anchor.web3.PublicKey | null = new anchor.web3.PublicKey(
-//   '8ZfwTfaixHgAdrsz6G1eJJvxrZPS8NCR7aCZKruF8jJj'
-// );
-// new anchor.web3.PublicKey("M484ioijKrAKuekDfCXXmQAtbsbJzMY5kGbNoZ5LVKz");
 
 describe('create-token', () => {
   // Configure the client to use the local cluster
@@ -108,81 +139,94 @@ const TOKEN_CONFIG_FILE = './token-config.json';
 export async function getOrCreateBetPointsMint(): Promise<anchor.web3.PublicKey> {
   const provider = anchor.AnchorProvider.env();
 
+  // If we're on devnet and have a specified token address, use that
+  if (isDevnet() && DEVNET_BET_POINTS_ADDRESS) {
+    const devnetMintAddress = new anchor.web3.PublicKey(DEVNET_BET_POINTS_ADDRESS);
+    console.log(`Using devnet token mint: ${devnetMintAddress.toString()}`);
+    return devnetMintAddress;
+  }
+
   // First check if we have a global mint address from this session
   if (existingMintAddress) {
     console.log(`Using existing token mint from memory: ${existingMintAddress.toString()}`);
     return existingMintAddress;
   }
 
-  // Check if we have a stored token configuration from previous runs
-  try {
-    if (fs.existsSync(TOKEN_CONFIG_FILE)) {
-      const config = JSON.parse(fs.readFileSync(TOKEN_CONFIG_FILE, 'utf8'));
-      if (config.mintAddress) {
-        const storedMintAddress = new anchor.web3.PublicKey(config.mintAddress);
+  // For localnet, check if we have a stored token configuration or create a new one
+  if (!isDevnet()) {
+    // Check if we have a stored token configuration from previous runs
+    try {
+      if (fs.existsSync(TOKEN_CONFIG_FILE)) {
+        const config = JSON.parse(fs.readFileSync(TOKEN_CONFIG_FILE, 'utf8'));
+        if (config.mintAddress) {
+          const storedMintAddress = new anchor.web3.PublicKey(config.mintAddress);
 
-        // Verify the mint exists
-        try {
-          const mintInfo = await provider.connection.getAccountInfo(storedMintAddress);
-          if (mintInfo !== null) {
-            console.log(`Using existing token mint from file: ${storedMintAddress.toString()}`);
-            existingMintAddress = storedMintAddress;
-            return storedMintAddress;
+          // Verify the mint exists
+          try {
+            const mintInfo = await provider.connection.getAccountInfo(storedMintAddress);
+            if (mintInfo !== null) {
+              console.log(`Using existing token mint from file: ${storedMintAddress.toString()}`);
+              existingMintAddress = storedMintAddress;
+              return storedMintAddress;
+            }
+          } catch (e) {
+            console.log(`Stored mint address is invalid, creating new one: ${e.message}`);
           }
-        } catch (e) {
-          console.log(`Stored mint address is invalid, creating new one: ${e.message}`);
         }
       }
+    } catch (e) {
+      console.log(`Error reading token config file: ${e.message}`);
     }
-  } catch (e) {
-    console.log(`Error reading token config file: ${e.message}`);
+
+    // If not found or invalid, create a new token
+    console.log(`Creating new SPL token: ${TOKEN_NAME} (${TOKEN_SYMBOL})`);
+
+    // Create the mint account
+    const mintAddress = await createMint(
+      provider.connection,
+      provider.wallet.payer,
+      provider.wallet.publicKey,
+      provider.wallet.publicKey,
+      TOKEN_DECIMALS
+    );
+
+    // Create associated token account for the wallet
+    const tokenAccount = await getOrCreateAssociatedTokenAccount(
+      provider.connection,
+      provider.wallet.payer,
+      mintAddress,
+      provider.wallet.publicKey
+    );
+
+    // Mint initial supply to the wallet
+    await mintTo(
+      provider.connection,
+      provider.wallet.payer,
+      mintAddress,
+      tokenAccount.address,
+      provider.wallet.publicKey,
+      TOKEN_INITIAL_SUPPLY
+    );
+
+    // Store the mint address in the global variable
+    existingMintAddress = mintAddress;
+
+    // Save the token configuration to a file for future test runs
+    const config = { mintAddress: mintAddress.toString() };
+    fs.writeFileSync(TOKEN_CONFIG_FILE, JSON.stringify(config, null, 2));
+    const absolutePath = path.resolve(__dirname, TOKEN_CONFIG_FILE);
+    console.log(`Wrote token configuration to ${absolutePath}`);
+    // Output token configuration for manual copy
+    console.log('\n==== TOKEN CONFIGURATION ====\n');
+    console.log(JSON.stringify(config, null, 2));
+    console.log('\n============================\n');
+    console.log(
+      `⚠️ Please copy this token configuration if needed for other tests, e.g. ${absolutePath}`
+    );
+
+    return mintAddress;
   }
 
-  // If not found or invalid, create a new token
-  console.log(`Creating new SPL token: ${TOKEN_NAME} (${TOKEN_SYMBOL})`);
-
-  // Create the mint account
-  const mintAddress = await createMint(
-    provider.connection,
-    provider.wallet.payer,
-    provider.wallet.publicKey,
-    provider.wallet.publicKey,
-    TOKEN_DECIMALS
-  );
-
-  // Create associated token account for the wallet
-  const tokenAccount = await getOrCreateAssociatedTokenAccount(
-    provider.connection,
-    provider.wallet.payer,
-    mintAddress,
-    provider.wallet.publicKey
-  );
-
-  // Mint initial supply to the wallet
-  await mintTo(
-    provider.connection,
-    provider.wallet.payer,
-    mintAddress,
-    tokenAccount.address,
-    provider.wallet.publicKey,
-    TOKEN_INITIAL_SUPPLY
-  );
-
-  // Store the mint address in the global variable
-  existingMintAddress = mintAddress;
-
-  // Save the token configuration to a file for future test runs
-  const config = { mintAddress: mintAddress.toString() };
-  fs.writeFileSync(TOKEN_CONFIG_FILE, JSON.stringify(config, null, 2));
-  const absolutePath = path.resolve(__dirname, TOKEN_CONFIG_FILE);
-  console.log(`Wrote token configuration to ${absolutePath}`);
-  // Output token configuration for manual copy
-  console.log('\n==== TOKEN CONFIGURATION ====\n');
-  console.log(JSON.stringify(config, null, 2));
-  console.log('\n============================\n');
-  console.log(
-    `⚠️ Please copy this token configuration if needed for other tests, e.g. ${absolutePath}`
-  );
-
-  return mintAddress;
+  // This should never happen (for devnet we should have already returned)
+  throw new Error('Unable to get or create bet points mint');
 }
