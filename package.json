@@ -8,10 +8,13 @@
     "graph-ethereum"
   ],
   "scripts": {
-    "build": "bun run build:contracts && bun run build:frontend && bun run build:graph-ethereum",
+    "build": "bun run build:contracts && bun run build:frontend && bun run build:graph-ethereum && bun run build:solana && bun run build:solana-substreams && bun run build:solana-subgraph",
     "build:contracts": "cd contracts && forge build",
     "build:frontend": "bun --cwd frontend build",
     "build:graph-ethereum": "bun --cwd graph-ethereum build",
+    "build:solana": "cd solana && RUSTUP_TOOLCHAIN=nightly-2025-04-14 anchor build",
+    "build:solana-subgraph": "cd solana/canibeton_solana/subgraph && bun run build",
+    "build:solana-substreams": "cd solana/canibeton_solana && substreams build",
     "contracts": "cd contracts &&",
     "dev": "bun --cwd frontend dev",
     "format": "prettier --write .",
@@ -21,7 +24,8 @@
     "prepare": "husky",
     "test": "bun run test:frontend && bun run test:contracts",
     "test:contracts": "cd contracts && forge test",
-    "test:frontend": "bun --cwd frontend test"
+    "test:frontend": "bun --cwd frontend test",
+    "test:solana": "cd solana && RUSTUP_TOOLCHAIN=nightly-2025-04-14 anchor test"
   },
   "lint-staged": {
     "*.{js,jsx,ts,tsx}": [

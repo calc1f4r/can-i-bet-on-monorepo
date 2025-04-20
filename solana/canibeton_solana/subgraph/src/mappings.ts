@@ -75,10 +75,7 @@ export function handleTriggers(bytes: Uint8Array): void {
     betEntity.userAddress = event.user;
     betEntity.optionIndex = BigInt.fromU64(event.optionIndex);
     betEntity.amount = BigInt.fromU64(event.amount);
-    // Use the created_at value from the event
     betEntity.createdAt = BigInt.fromI64(event.createdAt);
-    // Keep updatedAt field for backward compatibility, set to same value as createdAt
-    betEntity.updatedAt = BigInt.fromI64(event.createdAt);
     betEntity.isPayedOut = false;
     betEntity.outcome = 'NONE';
     betEntity.tokenType = mapTokenType(event.tokenType);

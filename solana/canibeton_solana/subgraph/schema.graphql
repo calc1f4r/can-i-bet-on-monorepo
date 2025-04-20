@@ -67,8 +67,6 @@ type Bet @entity {
   optionIndex: BigInt! # u64
   amount: BigInt! # u64
   createdAt: BigInt! # i64
-  # updatedAt field is kept for backward compatibility but no longer used
-  updatedAt: BigInt! # i64
   isPayedOut: Boolean! # bool
   outcome: BetOutcome! # enum
   tokenType: TokenType! # enum

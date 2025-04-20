@@ -7,3 +7,11 @@ test-ledger
 
 .env
 .envrc
+
+# Let the idl and generated types from target come through so Cursor can analyze them.
+target/debug
+target/deploy
+target/release
+target/sbf-solana-solana
+target/wasm32-unknown-unknown
+target/.rustc_info.json

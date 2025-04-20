@@ -15,7 +15,7 @@ betting_pools_2 = "9nW58a3uYAveyKAxpytoSwobwGTMm4QHJwzKiiGK7RXK"
 url = "https://api.apr.dev"
 
 [provider]
-cluster = "localnet"
+cluster = "devnet"
 wallet = "~/.config/solana/canibeton.json"
 
 [scripts]

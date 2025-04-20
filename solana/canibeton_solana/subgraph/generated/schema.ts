@@ -630,19 +630,6 @@ export class Bet extends Entity {
     this.set("createdAt", Value.fromBigInt(value));
   }
 
-  get updatedAt(): BigInt {
-    let value = this.get("updatedAt");
-    if (!value || value.kind == ValueKind.NULL) {
-      throw new Error("Cannot return null for a required field.");
-    } else {
-      return value.toBigInt();
-    }
-  }
-
-  set updatedAt(value: BigInt) {
-    this.set("updatedAt", Value.fromBigInt(value));
-  }
-
   get isPayedOut(): boolean {
     let value = this.get("isPayedOut");
     if (!value || value.kind == ValueKind.NULL) {
