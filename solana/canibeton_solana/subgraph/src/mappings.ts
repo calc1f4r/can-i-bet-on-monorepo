@@ -1,11 +1,28 @@
 import { BigInt } from '@graphprotocol/graph-ts';
 import { Protobuf } from 'as-proto';
 
-import { Pool, PoolCreated } from '../generated/schema';
+import { Bet, BetPlaced, Pool, PoolCreated } from '../generated/schema';
 import { Data as protoData } from './pb/substreams/v1/program/Data';
+
+function mapTokenType(tokenType: i32): string {
+  if (tokenType === 0) return 'USDC';
+  if (tokenType === 1) return 'POINTS';
+  return 'USDC'; // Default
+}
+
+function mapBetOutcome(outcome: i32): string {
+  if (outcome === 0) return 'NONE';
+  if (outcome === 1) return 'WON';
+  if (outcome === 2) return 'LOST';
+  if (outcome === 3) return 'VOIDED';
+  if (outcome === 4) return 'DRAW';
+  return 'NONE'; // Default
+}
 
 export function handleTriggers(bytes: Uint8Array): void {
   const input = Protobuf.decode<protoData>(bytes, protoData.decode);
+
+  // Handle PoolCreated events
   input.poolCreatedEventList.forEach(event => {
     // Create PoolCreated entity
     let poolCreatedEntity = new PoolCreated(`${event.poolId}`);
@@ -45,6 +62,69 @@ export function handleTriggers(bytes: Uint8Array): void {
     poolEntity.twitterPostId = ''; // Default empty string
     poolEntity.creationTxHash = event.txHash;
     poolEntity.save();
+  });
+
+  // Handle BetPlaced events
+  input.betPlacedEventList.forEach(event => {
+    // Create Bet entity
+    const betId = `${event.betId}`;
+    let betEntity = new Bet(betId);
+    betEntity.betIntId = BigInt.fromU64(event.betId);
+    betEntity.poolIntId = BigInt.fromU64(event.poolId);
+    betEntity.pool = event.poolId.toString();
+    betEntity.userAddress = event.user;
+    betEntity.optionIndex = BigInt.fromU64(event.optionIndex);
+    betEntity.amount = BigInt.fromU64(event.amount);
+    // Use the created_at value from the event
+    betEntity.createdAt = BigInt.fromI64(event.createdAt);
+    // Keep updatedAt field for backward compatibility, set to same value as createdAt
+    betEntity.updatedAt = BigInt.fromI64(event.createdAt);
+    betEntity.isPayedOut = false;
+    betEntity.outcome = 'NONE';
+    betEntity.tokenType = mapTokenType(event.tokenType);
+    betEntity.transactionHash = event.txHash;
+    betEntity.save();
+
+    // Create BetPlaced entity
+    const betPlacedId = `${event.txHash}-${event.betId}`;
+    let betPlacedEntity = new BetPlaced(betPlacedId);
+    betPlacedEntity.betId = BigInt.fromU64(event.betId);
+    betPlacedEntity.poolId = BigInt.fromU64(event.poolId);
+    betPlacedEntity.user = event.user;
+    betPlacedEntity.optionIndex = BigInt.fromU64(event.optionIndex);
+    betPlacedEntity.amount = BigInt.fromU64(event.amount);
+    betPlacedEntity.tokenType = mapTokenType(event.tokenType);
+    betPlacedEntity.createdAt = BigInt.fromI64(event.createdAt);
+    betPlacedEntity.transactionHash = event.txHash;
+    betPlacedEntity.bet = betId;
+    betPlacedEntity.pool = event.poolId.toString();
+    betPlacedEntity.save();
+
+    // Update Pool totals
+    const poolId = event.poolId.toString();
+    let poolEntity = Pool.load(poolId);
+    if (poolEntity) {
+      const optionIndex = event.optionIndex as i32; // Explicit cast to i32
+      const amount = BigInt.fromU64(event.amount);
+
+      if (event.tokenType === 0) {
+        // USDC
+        let usdcTotals = poolEntity.usdcBetTotalsByOption;
+        if (optionIndex < usdcTotals.length) {
+          usdcTotals[optionIndex] = usdcTotals[optionIndex].plus(amount);
+          poolEntity.usdcBetTotalsByOption = usdcTotals;
+        }
+      } else if (event.tokenType === 1) {
+        // POINTS
+        let pointsTotals = poolEntity.pointsBetTotalsByOption;
+        if (optionIndex < pointsTotals.length) {
+          pointsTotals[optionIndex] = pointsTotals[optionIndex].plus(amount);
+          poolEntity.pointsBetTotalsByOption = pointsTotals;
+        }
+      }
+
+      poolEntity.save();
+    }
   });
 
   // for (let i = 0; i < input.data.length; i++) {

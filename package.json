@@ -5,13 +5,13 @@
   "workspaces": [
     "frontend",
     "contracts",
-    "graph"
+    "graph-ethereum"
   ],
   "scripts": {
-    "build": "bun run build:contracts && bun run build:frontend && bun run build:graph",
+    "build": "bun run build:contracts && bun run build:frontend && bun run build:graph-ethereum",
     "build:contracts": "cd contracts && forge build",
     "build:frontend": "bun --cwd frontend build",
-    "build:graph": "bun --cwd graph build",
+    "build:graph-ethereum": "bun --cwd graph-ethereum build",
     "contracts": "cd contracts &&",
     "dev": "bun --cwd frontend dev",
     "format": "prettier --write .",

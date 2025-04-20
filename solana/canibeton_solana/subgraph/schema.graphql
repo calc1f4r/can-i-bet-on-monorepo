@@ -5,6 +5,19 @@ enum PoolStatus {
   REGRADED
 }
 
+enum BetOutcome {
+  NONE
+  WON
+  LOST
+  VOIDED
+  DRAW
+}
+
+enum TokenType {
+  USDC
+  POINTS
+}
+
 type Pool @entity {
   id: ID!
   poolIntId: BigInt! # u64
@@ -26,6 +39,7 @@ type Pool @entity {
   imageUrl: String!
   twitterPostId: String!
   creationTxHash: String!
+  bets: [Bet!]! @derivedFrom(field: "pool")
 }
 
 type PoolCreated @entity(immutable: true) {
@@ -42,4 +56,35 @@ type PoolCreated @entity(immutable: true) {
   closureCriteria: String!
   closureInstructions: String!
   txHash: String!
+}
+
+type Bet @entity {
+  id: ID!
+  betIntId: BigInt! # u64
+  poolIntId: BigInt! # u64
+  pool: Pool! # Relationship to pool
+  userAddress: String! # Pubkey as string
+  optionIndex: BigInt! # u64
+  amount: BigInt! # u64
+  createdAt: BigInt! # i64
+  # updatedAt field is kept for backward compatibility but no longer used
+  updatedAt: BigInt! # i64
+  isPayedOut: Boolean! # bool
+  outcome: BetOutcome! # enum
+  tokenType: TokenType! # enum
+  transactionHash: String! # tx_hash
+}
+
+type BetPlaced @entity(immutable: true) {
+  id: ID!
+  betId: BigInt! # u64
+  poolId: BigInt! # u64
+  user: String! # Pubkey as string
+  optionIndex: BigInt! # u64
+  amount: BigInt! # u64
+  tokenType: TokenType! # enum
+  createdAt: BigInt! # i64
+  transactionHash: String! # tx_hash
+  bet: Bet # Relationship to bet entity
+  pool: Pool # Relationship to pool entity
 }

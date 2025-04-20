@@ -1,5 +1,17 @@
 import * as anchor from '@coral-xyz/anchor';
 import { Program } from '@coral-xyz/anchor';
+import {
+  ASSOCIATED_TOKEN_PROGRAM_ID,
+  TOKEN_PROGRAM_ID,
+  createAssociatedTokenAccountInstruction,
+  createMint,
+  createMintToInstruction,
+  getAccount,
+  getAssociatedTokenAddress,
+  getOrCreateAssociatedTokenAccount,
+  mintTo,
+} from '@solana/spl-token';
+import * as token from '@solana/spl-token';
 import { expect } from 'chai';
 
 import { BettingPools2 } from '../target/types/betting_pools_2';
@@ -8,6 +20,158 @@ import { getOrCreateBetPointsMint } from './create-token';
 
 const BETTING_POOLS_SEED = Buffer.from('betting_pools_v7');
 export const POOL_SEED = Buffer.from('pool_v3');
+export const BET_SEED = Buffer.from('bet_v1');
+
+// Utility function to create a betting pool
+async function createBettingPool(
+  program: Program<BettingPools2>,
+  bettingPoolsAddress: anchor.web3.PublicKey,
+  authority: anchor.web3.PublicKey,
+  params: {
+    question: string;
+    options: string[];
+    betsCloseAt?: anchor.BN;
+    imageUrl?: string;
+    category?: string;
+    creatorName?: string;
+    creatorId?: string;
+    closureCriteria?: string;
+    closureInstructions?: string;
+  }
+): Promise<{
+  poolAddress: anchor.web3.PublicKey;
+  poolId: anchor.BN;
+  tx: string;
+}> {
+  // Get the current state to get the next pool ID
+  const bettingPoolsState = await program.account.bettingPoolsState.fetch(bettingPoolsAddress);
+  const poolId = bettingPoolsState.nextPoolId;
+
+  // Get the next pool address
+  const poolAddress = await getNextPoolAddress(program, bettingPoolsAddress);
+
+  // Default values
+  const betsCloseAt = params.betsCloseAt || new anchor.BN(Math.floor(Date.now() / 1000) + 86400); // 24 hours from now
+  const imageUrl = params.imageUrl || 'https://example.com/image.jpg';
+  const category = params.category || 'Crypto';
+  const creatorName = params.creatorName || 'Test Creator';
+  const creatorId = params.creatorId || 'test123';
+  const closureCriteria = params.closureCriteria || 'Default closure criteria';
+  const closureInstructions = params.closureInstructions || 'Default instructions';
+
+  // Create the pool
+  const tx = await program.methods
+    .createPool(
+      params.question,
+      params.options,
+      betsCloseAt,
+      imageUrl,
+      category,
+      creatorName,
+      creatorId,
+      closureCriteria,
+      closureInstructions
+    )
+    .accounts({
+      bettingPools: bettingPoolsAddress,
+      pool: poolAddress,
+      authority: authority,
+      systemProgram: anchor.web3.SystemProgram.programId,
+    })
+    .rpc();
+
+  return { poolAddress, poolId, tx };
+}
+
+// Helper function to create a user with funded bet points
+async function createFundedUser(
+  connection: anchor.web3.Connection,
+  payer: anchor.web3.Keypair,
+  betPointsMint: anchor.web3.PublicKey,
+  betPointsAmount: number = 2000 * 1e6 // 2000 BetPoints by default
+): Promise<{
+  user: anchor.web3.Keypair;
+  betPointsAccount: anchor.web3.PublicKey;
+}> {
+  // Create a new keypair for the user
+  const user = anchor.web3.Keypair.generate();
+
+  // Request an airdrop of 0.11 SOL for the user
+  const airdropSig = await connection.requestAirdrop(
+    user.publicKey,
+    0.11 * anchor.web3.LAMPORTS_PER_SOL
+  );
+  const latestBlockhash = await connection.getLatestBlockhash();
+  await connection.confirmTransaction({
+    signature: airdropSig,
+    blockhash: latestBlockhash.blockhash,
+    lastValidBlockHeight: latestBlockhash.lastValidBlockHeight,
+  });
+  console.log(`Airdropped 0.11 SOL to user ${user.publicKey.toString()}`);
+
+  // Get the associated token account address for this user
+  const associatedTokenAddress = await getAssociatedTokenAddress(betPointsMint, user.publicKey);
+
+  // Create the token account for the user
+  try {
+    const createAccountIx = createAssociatedTokenAccountInstruction(
+      payer.publicKey,
+      associatedTokenAddress,
+      user.publicKey,
+      betPointsMint
+    );
+
+    const tx = new anchor.web3.Transaction().add(createAccountIx);
+    const latestBlockhash = await connection.getLatestBlockhash();
+    tx.recentBlockhash = latestBlockhash.blockhash;
+    tx.feePayer = payer.publicKey;
+    tx.sign(payer);
+    const sig = await connection.sendRawTransaction(tx.serialize());
+    await connection.confirmTransaction({
+      signature: sig,
+      blockhash: latestBlockhash.blockhash,
+      lastValidBlockHeight: latestBlockhash.lastValidBlockHeight,
+    });
+    console.log(`Created token account for user: ${associatedTokenAddress.toString()}`);
+  } catch (e) {
+    console.log('Token account may already exist:', e);
+  }
+
+  // Mint BetPoints to the user
+  try {
+    const mintIx = createMintToInstruction(
+      betPointsMint,
+      associatedTokenAddress,
+      payer.publicKey,
+      betPointsAmount
+    );
+
+    const tx = new anchor.web3.Transaction().add(mintIx);
+    const latestBlockhash = await connection.getLatestBlockhash();
+    tx.recentBlockhash = latestBlockhash.blockhash;
+    tx.feePayer = payer.publicKey;
+    tx.sign(payer);
+    const sig = await connection.sendRawTransaction(tx.serialize());
+    await connection.confirmTransaction({
+      signature: sig,
+      blockhash: latestBlockhash.blockhash,
+      lastValidBlockHeight: latestBlockhash.lastValidBlockHeight,
+    });
+    console.log(`Minted ${betPointsAmount / 1e6} BetPoints to user`);
+
+    // Verify the balance
+    const accountInfo = await getAccount(connection, associatedTokenAddress);
+    console.log(`Token account balance verified: ${accountInfo.amount.toString()}`);
+  } catch (e) {
+    console.error('Error minting tokens:', e);
+    throw e;
+  }
+
+  return {
+    user,
+    betPointsAccount: associatedTokenAddress,
+  };
+}
 
 describe('betting-pools-2', () => {
   // Configure the client to use the local cluster.
@@ -15,17 +179,42 @@ describe('betting-pools-2', () => {
 
   const program = anchor.workspace.bettingPools2 as Program<BettingPools2>;
   const wallet = anchor.AnchorProvider.env().wallet;
+  const connection = anchor.getProvider().connection;
 
-  let usdcMint: anchor.web3.PublicKey = new anchor.web3.PublicKey(
-    '4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU'
-  );
+  // We need a keypair version of the wallet for token operations
+  const payerKeypair = anchor.Wallet.local().payer;
+
+  // Use the existing mint or create a new one
+  let usdcMint: anchor.web3.PublicKey; // We'll keep this for initialization but not mint it
   let betPointsMint: anchor.web3.PublicKey;
   let bettingPoolsAddress: anchor.web3.PublicKey;
+  let bettingPoolsBump: number;
+  let poolAddress: anchor.web3.PublicKey;
+  let poolId: anchor.BN;
+
+  // Store our users for the placeBet test
+  const users: Array<{
+    user: anchor.web3.Keypair;
+    betPointsAccount: anchor.web3.PublicKey;
+  }> = [];
 
   beforeEach(async () => {
     console.log('beforeEach section');
-    // Generate USDC mint keypair
+    // Request an airdrop for the payer if needed
+    const payerBalance = await connection.getBalance(payerKeypair.publicKey);
+    if (payerBalance < 1 * anchor.web3.LAMPORTS_PER_SOL) {
+      console.log('Requesting airdrop for payer wallet...');
+      const airdropSig = await connection.requestAirdrop(
+        payerKeypair.publicKey,
+        1 * anchor.web3.LAMPORTS_PER_SOL
+      );
+      await connection.confirmTransaction(airdropSig);
+      console.log(`Airdropped 1 SOL to payer ${payerKeypair.publicKey.toString()}`);
+    }
+
+    // Using a fake USDC mint (we won't mint any tokens)
     usdcMint = anchor.web3.Keypair.generate().publicKey;
+    console.log('Created fake USDC mint for initialization:', usdcMint.toString());
 
     // Get or create a real SPL token for bet points
     betPointsMint = await getOrCreateBetPointsMint();
@@ -89,11 +278,8 @@ describe('betting-pools-2', () => {
   it('Create a new betting pool', async () => {
     try {
       console.log('Creating pool');
-      // Create the pool
-      const bettingPoolsState = await program.account.bettingPoolsState.fetch(bettingPoolsAddress);
-      const nextPoolAddress = await getNextPoolAddress(program, bettingPoolsAddress);
 
-      const poolId = bettingPoolsState.nextPoolId;
+      // Pool parameters
       const question = 'Will BTC reach $200k by the end of 2025?';
       const options = ['Yes', 'No'];
       const betsCloseAt = new anchor.BN(Math.floor(Date.now() / 1000) + 86400); // 24 hours from now
@@ -104,8 +290,12 @@ describe('betting-pools-2', () => {
       const closureCriteria = 'The price of BTC exceeds $100,000 USD on any major exchange.';
       const closureInstructions = 'Check the price on Coinbase, Binance, and Kraken.';
 
-      const tx = await program.methods
-        .createPool(
+      // Create the pool using our utility function
+      const { poolAddress, poolId, tx } = await createBettingPool(
+        program,
+        bettingPoolsAddress,
+        wallet.publicKey,
+        {
           question,
           options,
           betsCloseAt,
@@ -114,21 +304,15 @@ describe('betting-pools-2', () => {
           creatorName,
           creatorId,
           closureCriteria,
-          closureInstructions
-        )
-        .accounts({
-          betting_pools: bettingPoolsAddress,
-          pool: nextPoolAddress,
-          authority: wallet.publicKey,
-          systemProgram: anchor.web3.SystemProgram.programId,
-        })
-        .rpc();
+          closureInstructions,
+        }
+      );
 
       console.log(`Create pool transaction: ${tx}`);
 
       // Fetch the pool account
-      console.log('Pool address:', nextPoolAddress);
-      const poolAccount = await program.account.pool.fetch(nextPoolAddress);
+      console.log('Pool address:', poolAddress);
+      const poolAccount = await program.account.pool.fetch(poolAddress);
       console.log('Pool account:', poolAccount);
 
       // Verify the pool data
@@ -151,6 +335,143 @@ describe('betting-pools-2', () => {
       expect(parseInt(updatedBettingPoolsState.nextPoolId.toString())).to.equal(expectedNextId);
     } catch (e) {
       console.error('Error in create pool test:', e);
+      throw e;
+    }
+  });
+
+  it('placeBet creates bet accounts with correct data and updates pool totals', async () => {
+    try {
+      // Get the current betting pools state
+      const bettingPoolsState = await program.account.bettingPoolsState.fetch(bettingPoolsAddress);
+      console.log('Betting pools state:', bettingPoolsState);
+
+      // Create a pool for testing using our utility function
+      const { poolAddress: newPoolAddress, poolId } = await createBettingPool(
+        program,
+        bettingPoolsAddress,
+        wallet.publicKey,
+        {
+          question: 'Will ETH reach $10k by the end of 2025?',
+          options: ['Yes', 'No'],
+          imageUrl: 'https://example.com/eth.jpg',
+          category: 'Crypto',
+          creatorName: 'Vitalik',
+          creatorId: 'vitalik123',
+          closureCriteria: 'The price of ETH exceeds $10,000 USD on any major exchange.',
+          closureInstructions: 'Check the price on Coinbase, Binance, and Kraken.',
+        }
+      );
+
+      console.log('Created new pool with ID:', poolId.toString());
+      poolAddress = newPoolAddress;
+
+      // Create a funded user for betting using our helper function
+      const { user: bettor, betPointsAccount: bettorTokenAccount } = await createFundedUser(
+        connection,
+        payerKeypair,
+        betPointsMint,
+        200_000_000 // 200 tokens
+      );
+
+      console.log(`Created funded bettor: ${bettor.publicKey.toString()}`);
+      console.log(`With token account: ${bettorTokenAccount.toString()}`);
+
+      // Define bet parameters
+      const optionIndex = 0;
+      const amount = new anchor.BN(100_000_000); // 100 tokens
+      const tokenType = { points: {} }; // Use points token type
+
+      // Find the bet account PDA
+      const nextBetId = bettingPoolsState.nextBetId;
+
+      const [betAddress] = anchor.web3.PublicKey.findProgramAddressSync(
+        [BET_SEED, poolId.toBuffer('le', 8), nextBetId.toBuffer('le', 8)],
+        program.programId
+      );
+      console.log('Bet PDA address:', betAddress.toString());
+
+      // We need to create the program token account to receive tokens
+      // This would typically be a PDA with authority set to program
+      // But for test purposes, we'll create a regular token account owned by the program
+      // Find the PDA for the program token account
+      const programTokenSeed = Buffer.from('program_token');
+      const [programTokenAuthority] = anchor.web3.PublicKey.findProgramAddressSync(
+        [programTokenSeed],
+        program.programId
+      );
+
+      // Create the program token account
+      console.log('Creating program token account...');
+      const programTokenAccount = await getOrCreateAssociatedTokenAccount(
+        connection,
+        payerKeypair,
+        betPointsMint,
+        programTokenAuthority,
+        true // allowOwnerOffCurve
+      );
+
+      console.log(`Created program token account: ${programTokenAccount.address.toString()}`);
+
+      // Check initial pool state
+      const initialPool = await program.account.pool.fetch(poolAddress);
+      console.log(
+        'Initial pool point bet totals:',
+        initialPool.pointsBetTotals.map(t => t.toString())
+      );
+
+      // Execute the placeBet instruction
+      console.log('Placing bet...');
+      const betTx = await program.methods
+        .placeBet(new anchor.BN(optionIndex), amount, tokenType)
+        .accounts({
+          bettingPools: bettingPoolsAddress,
+          pool: poolAddress,
+          bet: betAddress,
+          bettor: bettor.publicKey,
+          bettorTokenAccount: bettorTokenAccount,
+          programTokenAccount: programTokenAccount.address,
+          tokenProgram: TOKEN_PROGRAM_ID,
+          associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
+          systemProgram: anchor.web3.SystemProgram.programId,
+          rent: anchor.web3.SYSVAR_RENT_PUBKEY,
+        })
+        .signers([bettor])
+        .rpc();
+
+      console.log(`Bet placed with transaction: ${betTx}`);
+
+      // Fetch and verify the bet data
+      const betAccount = await program.account.bet.fetch(betAddress);
+      console.log('Bet account data:', betAccount);
+
+      // Verify bet data
+      expect(betAccount.id.toString()).to.equal(nextBetId.toString());
+      expect(betAccount.owner.toString()).to.equal(bettor.publicKey.toString());
+      expect(betAccount.option.toNumber()).to.equal(optionIndex);
+      expect(betAccount.amount.toString()).to.equal(amount.toString());
+      expect(betAccount.poolId.toString()).to.equal(poolId.toString());
+      expect('points' in betAccount.tokenType).to.be.true;
+
+      // Verify pool totals were updated
+      const updatedPool = await program.account.pool.fetch(poolAddress);
+      console.log(
+        'Updated pool point bet totals:',
+        updatedPool.pointsBetTotals.map(t => t.toString())
+      );
+
+      // Verify the points bet total was updated for the correct option
+      expect(updatedPool.pointsBetTotals[optionIndex].toString()).to.equal(amount.toString());
+      // For BN comparison, we need to compare string representations to avoid issues with BN objects
+      expect(updatedPool.pointsBetTotals[1 - optionIndex].toString()).to.equal('0'); // Other option should still be zero
+
+      // Verify betting pools nextBetId was incremented
+      const updatedBettingPools =
+        await program.account.bettingPoolsState.fetch(bettingPoolsAddress);
+      expect(updatedBettingPools.nextBetId.toNumber()).to.equal(nextBetId.toNumber() + 1);
+
+      console.log('Successfully verified placeBet functionality with real tokens');
+    } catch (e) {
+      console.error('Error in placeBet test:', e);
       throw e;
     }
   });

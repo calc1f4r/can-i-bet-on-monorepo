@@ -50,9 +50,8 @@ out/
 
 # Solana
 .anchor
-target/
 **/*.rs.bk
 test-ledger/
 .yarn/
-
 run
+

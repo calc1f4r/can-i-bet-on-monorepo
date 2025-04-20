@@ -1,9 +1,12 @@
 use anchor_lang::prelude::*;
+use anchor_spl::associated_token::AssociatedToken;
+use anchor_spl::token::{self, Token, TokenAccount, Transfer};
 
-declare_id!("2Mg5h1Hx6M8KkunpkzrMNtqJtkLp6uHX1u3gpmBoyxP5");
+declare_id!("9nW58a3uYAveyKAxpytoSwobwGTMm4QHJwzKiiGK7RXK");
 
 pub const BETTING_POOLS_SEED: &[u8] = b"betting_pools_v7";
 pub const POOL_SEED: &[u8] = b"pool_v3";
+pub const BET_SEED: &[u8] = b"bet_v1";
 
 #[program]
 pub mod betting_pools_2 {
@@ -111,6 +114,95 @@ pub mod betting_pools_2 {
 
         Ok(())
     }
+
+    /// Place a bet on a pool
+    /// Similar to the placeBet function in the Solidity version
+    pub fn place_bet(
+        ctx: Context<PlaceBet>,
+        option_index: u64,
+        amount: u64,
+        token_type: TokenType,
+    ) -> Result<()> {
+        let betting_pools = &ctx.accounts.betting_pools;
+        let pool = &mut ctx.accounts.pool;
+        let bet = &mut ctx.accounts.bet;
+        let bettor = &ctx.accounts.bettor;
+        let clock = Clock::get()?;
+
+        // Check if betting period is closed
+        if clock.unix_timestamp > pool.bets_close_at {
+            return err!(BettingPoolsError::BettingPeriodClosed);
+        }
+
+        // Check if pool is open for betting
+        if pool.status != PoolStatus::Pending {
+            return err!(BettingPoolsError::PoolNotOpen);
+        }
+
+        // Check if option index is valid
+        if option_index >= 2 {
+            return err!(BettingPoolsError::InvalidOptionIndex);
+        }
+
+        // Check if amount is valid
+        if amount == 0 {
+            return err!(BettingPoolsError::ZeroAmount);
+        }
+
+        // Transfer tokens from bettor to program account
+        // Note: The token accounts are validated in the PlaceBet context
+        token::transfer(
+            CpiContext::new(
+                ctx.accounts.token_program.to_account_info(),
+                Transfer {
+                    from: ctx.accounts.bettor_token_account.to_account_info(),
+                    to: ctx.accounts.program_token_account.to_account_info(),
+                    authority: bettor.to_account_info(),
+                },
+            ),
+            amount,
+        )?;
+
+        // Initialize the bet
+        let bet_id = betting_pools.next_bet_id;
+
+        bet.id = bet_id;
+        bet.owner = bettor.key();
+        bet.option = option_index;
+        bet.amount = amount;
+        bet.pool_id = pool.id;
+        bet.created_at = clock.unix_timestamp;
+        // No longer actively updating this field, but keeping it for compatibility
+        bet.updated_at = clock.unix_timestamp;
+        bet.is_payed_out = false;
+        bet.outcome = BetOutcome::None;
+        bet.token_type = token_type;
+        bet.bump = ctx.bumps.bet;
+
+        // Update totals in the pool
+        if token_type == TokenType::Usdc {
+            pool.usdc_bet_totals[option_index as usize] += amount;
+        } else {
+            pool.points_bet_totals[option_index as usize] += amount;
+        }
+
+        // Emit the BetPlaced event
+        emit!(BetPlaced {
+            bet_id,
+            pool_id: pool.id,
+            user: bettor.key(),
+            option_index,
+            amount,
+            token_type,
+            created_at: clock.unix_timestamp,
+        });
+
+        // Increment the bet ID counter
+        let betting_pools = &mut ctx.accounts.betting_pools;
+        betting_pools.next_bet_id += 1;
+
+        Ok(())
+    }
 }
 
 // Initialize context
@@ -202,6 +294,8 @@ pub enum BettingPoolsError {
     InsufficientBalance,
     #[msg("Not authorized")]
     NotAuthorized,
+    #[msg("Token transfer failed")]
+    TokenTransferFailed,
 }
 
 #[derive(AnchorSerialize, AnchorDeserialize, Clone, Copy, PartialEq, Eq, InitSpace)]
@@ -210,6 +304,21 @@ pub enum PoolStatus {
     Pending,
     Graded,
     Regraded, // Disputed (unused for now)
+}
+
+#[derive(AnchorSerialize, AnchorDeserialize, Clone, Copy, PartialEq, Eq, InitSpace)]
+pub enum BetOutcome {
+    None,
+    Won,
+    Lost,
+    Voided,
+    Draw,
+}
+
+#[derive(AnchorSerialize, AnchorDeserialize, Clone, Copy, PartialEq, Eq, InitSpace)]
+pub enum TokenType {
+    Usdc,
+    Points,
 }
 
 #[account]
@@ -258,4 +367,86 @@ pub struct PoolCreated {
     pub closure_criteria: String,
     pub closure_instructions: String,
     pub created_at: i64,
+}
+
+#[event]
+pub struct BetPlaced {
+    pub bet_id: u64,
+    pub pool_id: u64,
+    pub user: Pubkey,
+    pub option_index: u64,
+    pub amount: u64,
+    pub token_type: TokenType,
+    pub created_at: i64,
+}
+
+#[event]
+pub struct PoolClosed {
+    pub pool_id: u64,
+    pub selected_option: u64,
+    pub decision_time: i64,
+}
+
+#[account]
+#[derive(InitSpace)]
+pub struct Bet {
+    pub id: u64,
+    pub owner: Pubkey,
+    pub option: u64,
+    pub amount: u64,
+    pub pool_id: u64,
+    pub created_at: i64,
+    pub updated_at: i64,
+    pub is_payed_out: bool,
+    pub outcome: BetOutcome,
+    pub token_type: TokenType,
+    pub bump: u8,
+}
+
+#[derive(Accounts)]
+#[instruction(option_index: u64, amount: u64, token_type: TokenType)]
+pub struct PlaceBet<'info> {
+    #[account(
+        mut,
+        seeds = [BETTING_POOLS_SEED],
+        bump
+    )]
+    pub betting_pools: Account<'info, BettingPoolsState>,
+
+    #[account(
+        mut,
+        seeds = [POOL_SEED, pool.id.to_le_bytes().as_ref()],
+        bump
+    )]
+    pub pool: Account<'info, Pool>,
+
+    #[account(
+        init,
+        payer = bettor,
+        space = 8 + Bet::INIT_SPACE,
+        seeds = [BET_SEED, pool.id.to_le_bytes().as_ref(), betting_pools.next_bet_id.to_le_bytes().as_ref()],
+        bump
+    )]
+    pub bet: Account<'info, Bet>,
+
+    #[account(mut)]
+    pub bettor: Signer<'info>,
+
+    #[account(
+        mut,
+        token::authority = bettor,
+        token::mint = if token_type == TokenType::Usdc { betting_pools.usdc_mint } else { betting_pools.bet_points_mint }
+    )]
+    pub bettor_token_account: Account<'info, token::TokenAccount>,
+
+    #[account(
+        mut,
+        token::mint = if token_type == TokenType::Usdc { betting_pools.usdc_mint } else { betting_pools.bet_points_mint }
+    )]
+    pub program_token_account: Account<'info, token::TokenAccount>,
+
+    pub token_program: Program<'info, Token>,
+    pub associated_token_program: Program<'info, AssociatedToken>,
+    pub system_program: Program<'info, System>,
+    pub rent: Sysvar<'info, Rent>,
 }

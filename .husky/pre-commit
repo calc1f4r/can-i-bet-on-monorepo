@@ -5,7 +5,7 @@
 echo "Running codegen in frontend..."
 bun --cwd frontend codegen
 echo "Running codegen in graph..."
-bun --cwd graph codegen
+bun --cwd graph-ethereum codegen
 
 # Stage any files modified by codegen
 echo "Staging files modified by codegen..."

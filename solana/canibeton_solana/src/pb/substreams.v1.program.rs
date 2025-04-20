@@ -8,6 +8,10 @@ pub struct Data {
     pub create_pool_instruction_list: ::prost::alloc::vec::Vec<CreatePoolInstruction>,
     #[prost(message, repeated, tag="3")]
     pub initialize_instruction_list: ::prost::alloc::vec::Vec<InitializeInstruction>,
+    #[prost(message, repeated, tag="4")]
+    pub bet_placed_event_list: ::prost::alloc::vec::Vec<BetPlacedEvent>,
+    #[prost(message, repeated, tag="5")]
+    pub place_bet_instruction_list: ::prost::alloc::vec::Vec<PlaceBetInstruction>,
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -80,5 +84,49 @@ pub struct InitializeInstruction {
     pub acct_betting_pools: ::prost::alloc::string::String,
     #[prost(string, tag="5")]
     pub acct_authority: ::prost::alloc::string::String,
+}
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct BetPlacedEvent {
+    #[prost(string, tag="1")]
+    pub tx_hash: ::prost::alloc::string::String,
+    #[prost(uint64, tag="2")]
+    pub bet_id: u64,
+    #[prost(uint64, tag="3")]
+    pub pool_id: u64,
+    #[prost(string, tag="4")]
+    pub user: ::prost::alloc::string::String,
+    #[prost(uint64, tag="5")]
+    pub option_index: u64,
+    #[prost(uint64, tag="6")]
+    pub amount: u64,
+    #[prost(int32, tag="7")]
+    pub token_type: i32,
+    #[prost(int64, tag="8")]
+    pub created_at: i64,
+}
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct PlaceBetInstruction {
+    #[prost(string, tag="1")]
+    pub tx_hash: ::prost::alloc::string::String,
+    #[prost(uint64, tag="2")]
+    pub option_index: u64,
+    #[prost(uint64, tag="3")]
+    pub amount: u64,
+    #[prost(int32, tag="4")]
+    pub token_type: i32,
+    #[prost(string, tag="5")]
+    pub acct_betting_pools: ::prost::alloc::string::String,
+    #[prost(string, tag="6")]
+    pub acct_pool: ::prost::alloc::string::String,
+    #[prost(string, tag="7")]
+    pub acct_bet: ::prost::alloc::string::String,
+    #[prost(string, tag="8")]
+    pub acct_bettor: ::prost::alloc::string::String,
+    #[prost(string, tag="9")]
+    pub acct_bettor_token_account: ::prost::alloc::string::String,
+    #[prost(string, tag="10")]
+    pub acct_program_token_account: ::prost::alloc::string::String,
 }
 // @@protoc_insertion_point(module)

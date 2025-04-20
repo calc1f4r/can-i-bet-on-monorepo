@@ -1,0 +1,9 @@
+{
+  "name": "graph-ethereum",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "build": "graph build",
+    "codegen": "graph codegen"
+  }
+}

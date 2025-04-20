@@ -6,16 +6,16 @@ resolution = true
 skip-lint = false
 
 [programs.devnet]
-betting_pools_2 = "2Mg5h1Hx6M8KkunpkzrMNtqJtkLp6uHX1u3gpmBoyxP5"
+betting_pools_2 = "9nW58a3uYAveyKAxpytoSwobwGTMm4QHJwzKiiGK7RXK"
 
 [programs.localnet]
-betting_pools_2 = "2Mg5h1Hx6M8KkunpkzrMNtqJtkLp6uHX1u3gpmBoyxP5"
+betting_pools_2 = "9nW58a3uYAveyKAxpytoSwobwGTMm4QHJwzKiiGK7RXK"
 
 [registry]
 url = "https://api.apr.dev"
 
 [provider]
-cluster = "devnet"
+cluster = "localnet"
 wallet = "~/.config/solana/canibeton.json"
 
 [scripts]

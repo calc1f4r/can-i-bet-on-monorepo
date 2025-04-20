@@ -6,6 +6,8 @@ message Data {
     repeated PoolCreated_Event pool_created_event_list = 1;
     repeated CreatePool_Instruction create_pool_instruction_list = 2;
     repeated Initialize_Instruction initialize_instruction_list = 3;
+    repeated BetPlaced_Event bet_placed_event_list = 4;
+    repeated PlaceBet_Instruction place_bet_instruction_list = 5;
 }
 message PoolCreated_Event {
   string tx_hash = 1;
@@ -43,5 +45,29 @@ message Initialize_Instruction {
     string bet_points_mint = 3;
     string acct_betting_pools = 4;
     string acct_authority = 5;
+}
+
+message BetPlaced_Event {
+  string tx_hash = 1;
+  uint64 bet_id = 2;
+  uint64 pool_id = 3;
+  string user = 4;
+  uint64 option_index = 5;
+  uint64 amount = 6;
+  int32 token_type = 7;
+  int64 created_at = 8;
+}
+
+message PlaceBet_Instruction {
+  string tx_hash = 1;
+  uint64 option_index = 2;
+  uint64 amount = 3;
+  int32 token_type = 4;
+  string acct_betting_pools = 5;
+  string acct_pool = 6;
+  string acct_bet = 7;
+  string acct_bettor = 8;
+  string acct_bettor_token_account = 9;
+  string acct_program_token_account = 10;
 }
 

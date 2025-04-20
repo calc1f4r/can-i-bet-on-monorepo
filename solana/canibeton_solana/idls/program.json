@@ -1,5 +1,5 @@
 {
-  "address": "2Mg5h1Hx6M8KkunpkzrMNtqJtkLp6uHX1u3gpmBoyxP5",
+  "address": "9nW58a3uYAveyKAxpytoSwobwGTMm4QHJwzKiiGK7RXK",
   "metadata": {
     "name": "betting_pools_2",
     "version": "0.1.1",
@@ -140,9 +140,120 @@
           "type": "pubkey"
         }
       ]
+    },
+    {
+      "name": "place_bet",
+      "docs": ["Place a bet on a pool", "Similar to the placeBet function in the Solidity version"],
+      "discriminator": [222, 62, 67, 220, 63, 166, 126, 33],
+      "accounts": [
+        {
+          "name": "betting_pools",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  98, 101, 116, 116, 105, 110, 103, 95, 112, 111, 111, 108, 115, 95, 118, 55
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "pool",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [112, 111, 111, 108, 95, 118, 51]
+              },
+              {
+                "kind": "account",
+                "path": "pool.id",
+                "account": "Pool"
+              }
+            ]
+          }
+        },
+        {
+          "name": "bet",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [98, 101, 116, 95, 118, 49]
+              },
+              {
+                "kind": "account",
+                "path": "pool.id",
+                "account": "Pool"
+              },
+              {
+                "kind": "account",
+                "path": "betting_pools.next_bet_id",
+                "account": "BettingPoolsState"
+              }
+            ]
+          }
+        },
+        {
+          "name": "bettor",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "bettor_token_account",
+          "writable": true
+        },
+        {
+          "name": "program_token_account",
+          "writable": true
+        },
+        {
+          "name": "token_program",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        },
+        {
+          "name": "associated_token_program",
+          "address": "ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL"
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        },
+        {
+          "name": "rent",
+          "address": "SysvarRent111111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "option_index",
+          "type": "u64"
+        },
+        {
+          "name": "amount",
+          "type": "u64"
+        },
+        {
+          "name": "token_type",
+          "type": {
+            "defined": {
+              "name": "TokenType"
+            }
+          }
+        }
+      ]
     }
   ],
   "accounts": [
+    {
+      "name": "Bet",
+      "discriminator": [147, 23, 35, 59, 15, 75, 155, 32]
+    },
     {
       "name": "BettingPoolsState",
       "discriminator": [136, 14, 114, 28, 173, 213, 192, 14]
@@ -153,6 +264,14 @@
     }
   ],
   "events": [
+    {
+      "name": "BetPlaced",
+      "discriminator": [88, 88, 145, 226, 126, 206, 32, 0]
+    },
+    {
+      "name": "PoolClosed",
+      "discriminator": [106, 46, 29, 231, 42, 44, 73, 119]
+    },
     {
       "name": "PoolCreated",
       "discriminator": [202, 44, 41, 88, 104, 220, 157, 82]
@@ -213,9 +332,137 @@
       "code": 6010,
       "name": "NotAuthorized",
       "msg": "Not authorized"
+    },
+    {
+      "code": 6011,
+      "name": "TokenTransferFailed",
+      "msg": "Token transfer failed"
     }
   ],
   "types": [
+    {
+      "name": "Bet",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "id",
+            "type": "u64"
+          },
+          {
+            "name": "owner",
+            "type": "pubkey"
+          },
+          {
+            "name": "option",
+            "type": "u64"
+          },
+          {
+            "name": "amount",
+            "type": "u64"
+          },
+          {
+            "name": "pool_id",
+            "type": "u64"
+          },
+          {
+            "name": "created_at",
+            "type": "i64"
+          },
+          {
+            "name": "updated_at",
+            "type": "i64"
+          },
+          {
+            "name": "is_payed_out",
+            "type": "bool"
+          },
+          {
+            "name": "outcome",
+            "type": {
+              "defined": {
+                "name": "BetOutcome"
+              }
+            }
+          },
+          {
+            "name": "token_type",
+            "type": {
+              "defined": {
+                "name": "TokenType"
+              }
+            }
+          },
+          {
+            "name": "bump",
+            "type": "u8"
+          }
+        ]
+      }
+    },
+    {
+      "name": "BetOutcome",
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "None"
+          },
+          {
+            "name": "Won"
+          },
+          {
+            "name": "Lost"
+          },
+          {
+            "name": "Voided"
+          },
+          {
+            "name": "Draw"
+          }
+        ]
+      }
+    },
+    {
+      "name": "BetPlaced",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "bet_id",
+            "type": "u64"
+          },
+          {
+            "name": "pool_id",
+            "type": "u64"
+          },
+          {
+            "name": "user",
+            "type": "pubkey"
+          },
+          {
+            "name": "option_index",
+            "type": "u64"
+          },
+          {
+            "name": "amount",
+            "type": "u64"
+          },
+          {
+            "name": "token_type",
+            "type": {
+              "defined": {
+                "name": "TokenType"
+              }
+            }
+          },
+          {
+            "name": "created_at",
+            "type": "i64"
+          }
+        ]
+      }
+    },
     {
       "name": "BettingPoolsState",
       "type": {
@@ -351,6 +598,26 @@
       }
     },
     {
+      "name": "PoolClosed",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "pool_id",
+            "type": "u64"
+          },
+          {
+            "name": "selected_option",
+            "type": "u64"
+          },
+          {
+            "name": "decision_time",
+            "type": "i64"
+          }
+        ]
+      }
+    },
+    {
       "name": "PoolCreated",
       "type": {
         "kind": "struct",
@@ -420,6 +687,20 @@
           },
           {
             "name": "Regraded"
+          }
+        ]
+      }
+    },
+    {
+      "name": "TokenType",
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "Usdc"
+          },
+          {
+            "name": "Points"
           }
         ]
       }

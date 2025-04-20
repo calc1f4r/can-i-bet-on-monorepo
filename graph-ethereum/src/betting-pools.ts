@@ -1,11 +1,12 @@
-import { BigInt, Bytes, dataSource } from "@graphprotocol/graph-ts";
+import { BigInt, Bytes, dataSource } from '@graphprotocol/graph-ts';
+
 import {
   BetPlaced as BetPlacedEvent,
   PayoutClaimed as PayoutClaimedEvent,
   PoolClosed as PoolClosedEvent,
   PoolCreated as PoolCreatedEvent,
   TwitterPostIdSet as TwitterPostIdSetEvent,
-} from "../generated/BettingPools/BettingPools";
+} from '../generated/BettingPools/BettingPools';
 import {
   Bet,
   BetPlaced,
@@ -14,19 +15,19 @@ import {
   PoolClosed,
   PoolCreated,
   TwitterPostIdSet,
-} from "../generated/schema";
+} from '../generated/schema';
 
 const chainIdToNetworkName = (networkName: string): i32 => {
-  if (networkName == "base-sepolia") return 84532;
-  if (networkName == "base") return 8453;
-  if (networkName == "mainnet") return 1;
-  if (networkName == "sepolia") return 11155111;
-  if (networkName == "arbitrum-sepolia") return 421614;
-  if (networkName == "arbitrum") return 42161;
-  if (networkName == "optimism-sepolia") return 111550111;
-  if (networkName == "optimism") return 10;
-  if (networkName == "scroll-sepolia") return 534351;
-  if (networkName == "scroll") return 534352;
+  if (networkName == 'base-sepolia') return 84532;
+  if (networkName == 'base') return 8453;
+  if (networkName == 'mainnet') return 1;
+  if (networkName == 'sepolia') return 11155111;
+  if (networkName == 'arbitrum-sepolia') return 421614;
+  if (networkName == 'arbitrum') return 42161;
+  if (networkName == 'optimism-sepolia') return 111550111;
+  if (networkName == 'optimism') return 10;
+  if (networkName == 'scroll-sepolia') return 534351;
+  if (networkName == 'scroll') return 534352;
 
   throw new Error(`Network ${networkName} not supported`);
 };
@@ -45,7 +46,7 @@ export function handleBetPlaced(event: BetPlacedEvent): void {
   entity.user = event.params.user;
   entity.optionIndex = event.params.optionIndex;
   entity.amount = event.params.amount;
-  entity.tokenType = event.params.tokenType ? "POINTS" : "USDC";
+  entity.tokenType = event.params.tokenType ? 'POINTS' : 'USDC';
   entity.blockNumber = event.block.number;
   entity.blockTimestamp = event.block.timestamp;
   entity.transactionHash = event.transaction.hash;
@@ -54,7 +55,7 @@ export function handleBetPlaced(event: BetPlacedEvent): void {
 
   const poolCreated = PoolCreated.load(poolId);
   if (poolCreated == null) {
-    throw new Error("PoolCreated not found");
+    throw new Error('PoolCreated not found');
   }
   entity.poolCreated = poolCreated.id;
 
@@ -67,7 +68,7 @@ export function handleBetPlaced(event: BetPlacedEvent): void {
   bet.user = event.params.user;
   bet.optionIndex = event.params.optionIndex;
   bet.amount = event.params.amount;
-  bet.tokenType = event.params.tokenType == 1 ? "POINTS" : "USDC";
+  bet.tokenType = event.params.tokenType == 1 ? 'POINTS' : 'USDC';
   bet.createdAt = event.block.timestamp;
   bet.updatedAt = event.block.timestamp;
   bet.blockNumber = event.block.number;
@@ -80,12 +81,12 @@ export function handleBetPlaced(event: BetPlacedEvent): void {
   bet.payoutClaimedBlockTimestamp = null;
   bet.payoutClaimedTransactionHash = null;
   bet.userAddress = event.params.user;
-  bet.outcome = "NONE";
+  bet.outcome = 'NONE';
 
   // Update Pool totals and timestamps
   const pool = Pool.load(poolId);
   if (pool == null) {
-    throw new Error("Pool not found");
+    throw new Error('Pool not found');
   }
 
   // Update the appropriate bet totals based on tokenType
@@ -136,10 +137,10 @@ export function handlePoolClosed(event: PoolClosedEvent): void {
   // Update Pool status and timestamps
   const pool = Pool.load(poolId);
   if (pool == null) {
-    throw new Error("Pool not found");
+    throw new Error('Pool not found');
   }
   pool.selectedOption = event.params.selectedOption;
-  pool.status = "GRADED";
+  pool.status = 'GRADED';
   pool.decisionTime = event.params.decisionTime;
 
   // Update graded timestamps
@@ -186,7 +187,7 @@ export function handlePoolCreated(event: PoolCreatedEvent): void {
   pool.usdcVolume = BigInt.fromI32(0);
   pool.pointsVolume = BigInt.fromI32(0);
   pool.selectedOption = BigInt.fromI32(0);
-  pool.status = "PENDING";
+  pool.status = 'PENDING';
   pool.imageUrl = event.params.params.imageUrl;
   pool.category = event.params.params.category;
   pool.creatorId = event.params.params.creatorId;
@@ -198,7 +199,7 @@ export function handlePoolCreated(event: PoolCreatedEvent): void {
   pool.chainName = networkName;
   pool.chainId = BigInt.fromI32(chainId as i32);
   pool.isDraw = false;
-  pool.xPostId = "";
+  pool.xPostId = '';
   // Set initial timestamps
   pool.createdBlockNumber = event.block.number;
   pool.createdBlockTimestamp = event.block.timestamp;
@@ -257,7 +258,7 @@ export function handlePayoutClaimed(event: PayoutClaimedEvent): void {
   entity.poolId = event.params.poolId;
   entity.user = event.params.user;
   entity.amount = event.params.amount;
-  entity.tokenType = event.params.tokenType ? "POINTS" : "USDC";
+  entity.tokenType = event.params.tokenType ? 'POINTS' : 'USDC';
   entity.blockNumber = event.block.number;
   entity.blockTimestamp = event.block.timestamp;
   entity.transactionHash = event.transaction.hash;
@@ -271,17 +272,17 @@ export function handlePayoutClaimed(event: PayoutClaimedEvent): void {
   let outcome: string;
 
   if (resolutionCodeValue == 0) {
-    outcome = "NONE";
+    outcome = 'NONE';
   } else if (resolutionCodeValue == 1) {
-    outcome = "WON";
+    outcome = 'WON';
   } else if (resolutionCodeValue == 2) {
-    outcome = "LOST";
+    outcome = 'LOST';
   } else if (resolutionCodeValue == 3) {
-    outcome = "VOIDED";
+    outcome = 'VOIDED';
   } else if (resolutionCodeValue == 4) {
-    outcome = "DRAW";
+    outcome = 'DRAW';
   } else {
-    outcome = "NONE";
+    outcome = 'NONE';
   }
 
   entity.outcome = outcome;
@@ -289,7 +290,7 @@ export function handlePayoutClaimed(event: PayoutClaimedEvent): void {
   // Update Bet entity
   const bet = Bet.load(betId);
   if (bet == null) {
-    throw new Error("Bet not found");
+    throw new Error('Bet not found');
   }
   bet.payoutClaimed = true;
   bet.payoutClaimedBlockNumber = event.block.number;

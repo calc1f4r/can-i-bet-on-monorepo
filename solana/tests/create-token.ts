@@ -6,6 +6,7 @@ import {
   mintTo,
 } from '@solana/spl-token';
 import { expect } from 'chai';
+import fs from 'fs';
 
 // Constants for SPL token
 const TOKEN_NAME = 'Betting Points';
@@ -13,10 +14,11 @@ const TOKEN_SYMBOL = 'BPT';
 const TOKEN_DECIMALS = 6; // Match USDC decimals to make our lives easier
 const TOKEN_INITIAL_SUPPLY = 1_000_000 * Math.pow(10, TOKEN_DECIMALS); // 1 million tokens
 
-// export let existingMintAddress: anchor.web3.PublicKey | null = null;
-export let existingMintAddress: anchor.web3.PublicKey | null = new anchor.web3.PublicKey(
-  '8ZfwTfaixHgAdrsz6G1eJJvxrZPS8NCR7aCZKruF8jJj'
-);
+export let existingMintAddress: anchor.web3.PublicKey | null = null;
+// Devnet points token
+// export let existingMintAddress: anchor.web3.PublicKey | null = new anchor.web3.PublicKey(
+//   '8ZfwTfaixHgAdrsz6G1eJJvxrZPS8NCR7aCZKruF8jJj'
+// );
 // new anchor.web3.PublicKey("M484ioijKrAKuekDfCXXmQAtbsbJzMY5kGbNoZ5LVKz");
 
 describe('create-token', () => {
@@ -99,16 +101,44 @@ describe('create-token', () => {
   });
 });
 
+// Create a file to store the token mint address between test runs
+const TOKEN_CONFIG_FILE = './token-config.json';
+
 // Export function to be used by other tests
 export async function getOrCreateBetPointsMint(): Promise<anchor.web3.PublicKey> {
   const provider = anchor.AnchorProvider.env();
 
-  // Check if we have a global mint address
+  // First check if we have a global mint address from this session
   if (existingMintAddress) {
+    console.log(`Using existing token mint from memory: ${existingMintAddress.toString()}`);
     return existingMintAddress;
   }
 
-  // If not, create a new token
+  // Check if we have a stored token configuration from previous runs
+  try {
+    if (fs.existsSync(TOKEN_CONFIG_FILE)) {
+      const config = JSON.parse(fs.readFileSync(TOKEN_CONFIG_FILE, 'utf8'));
+      if (config.mintAddress) {
+        const storedMintAddress = new anchor.web3.PublicKey(config.mintAddress);
+
+        // Verify the mint exists
+        try {
+          const mintInfo = await provider.connection.getAccountInfo(storedMintAddress);
+          if (mintInfo !== null) {
+            console.log(`Using existing token mint from file: ${storedMintAddress.toString()}`);
+            existingMintAddress = storedMintAddress;
+            return storedMintAddress;
+          }
+        } catch (e) {
+          console.log(`Stored mint address is invalid, creating new one: ${e.message}`);
+        }
+      }
+    }
+  } catch (e) {
+    console.log(`Error reading token config file: ${e.message}`);
+  }
+
+  // If not found or invalid, create a new token
   console.log(`Creating new SPL token: ${TOKEN_NAME} (${TOKEN_SYMBOL})`);
 
   // Create the mint account
@@ -141,11 +171,18 @@ export async function getOrCreateBetPointsMint(): Promise<anchor.web3.PublicKey>
   // Store the mint address in the global variable
   existingMintAddress = mintAddress;
 
+  // Save the token configuration to a file for future test runs
+  const config = { mintAddress: mintAddress.toString() };
+  fs.writeFileSync(TOKEN_CONFIG_FILE, JSON.stringify(config, null, 2));
+  const absolutePath = path.resolve(__dirname, TOKEN_CONFIG_FILE);
+  console.log(`Wrote token configuration to ${absolutePath}`);
   // Output token configuration for manual copy
   console.log('\n==== TOKEN CONFIGURATION ====\n');
-  console.log(JSON.stringify({ mintAddress: mintAddress.toString() }, null, 2));
+  console.log(JSON.stringify(config, null, 2));
   console.log('\n============================\n');
-  console.log('⚠️ Please copy this token configuration if needed for other tests');
+  console.log(
+    `⚠️ Please copy this token configuration if needed for other tests, e.g. ${absolutePath}`
+  );
 
   return mintAddress;
 }
