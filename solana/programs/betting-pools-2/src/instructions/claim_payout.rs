@@ -1,5 +1,6 @@
 use anchor_lang::prelude::*;
 use anchor_spl::token::{self, Token, TokenAccount, Transfer};
+use anchor_spl::associated_token::AssociatedToken;
 use crate::states::{BettingPoolsState, Pool, Bet, PoolStatus, TokenType, BetOutcome, PayoutClaimed};
 use crate::errors::BettingPoolsError;
 use crate::constants::{BETTING_POOLS_SEED, POOL_SEED, BET_SEED};
@@ -36,11 +37,8 @@ pub struct ClaimPayout<'info> {
 
     #[account(
         mut,
-        token::authority = bettor,
-        constraint = bettor_token_account.owner == bettor.key() @ BettingPoolsError::InvalidTokenAccountOwner,
-        constraint = bettor_token_account.mint == 
-            (if bet.token_type == TokenType::Usdc { betting_pools.usdc_mint } 
-            else { betting_pools.bet_points_mint }) @ BettingPoolsError::TokenAccountMismatch
+        associated_token::mint = if bet.token_type == TokenType::Usdc { betting_pools.usdc_mint } else { betting_pools.bet_points_mint },
+        associated_token::authority = bettor
     )]
     pub bettor_token_account: Account<'info, TokenAccount>,
 
@@ -53,6 +51,7 @@ pub struct ClaimPayout<'info> {
     pub program_token_account: Account<'info, TokenAccount>,
 
     pub token_program: Program<'info, Token>,
+    pub associated_token_program: Program<'info, AssociatedToken>,
     pub system_program: Program<'info, System>,
 }
 

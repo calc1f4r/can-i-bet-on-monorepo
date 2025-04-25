@@ -38,16 +38,16 @@ pub struct PlaceBet<'info> {
 
     #[account(
         mut,
-        token::authority = bettor,
-        token::mint = if token_type == TokenType::Usdc { betting_pools.usdc_mint } else { betting_pools.bet_points_mint },
-        constraint = bettor_token_account.owner == bettor.key() @ BettingPoolsError::InvalidTokenAccountOwner
+        associated_token::mint = if token_type == TokenType::Usdc { betting_pools.usdc_mint } else { betting_pools.bet_points_mint },
+        associated_token::authority = bettor
     )]
     pub bettor_token_account: Account<'info, TokenAccount>,
 
     #[account(
         mut,
-        token::mint = if token_type == TokenType::Usdc { betting_pools.usdc_mint } else { betting_pools.bet_points_mint },
-        constraint = program_token_account.mint == (if token_type == TokenType::Usdc { betting_pools.usdc_mint } else { betting_pools.bet_points_mint }) @ BettingPoolsError::IncorrectTokenMint
+        constraint = program_token_account.mint == 
+            (if token_type == TokenType::Usdc { betting_pools.usdc_mint } 
+            else { betting_pools.bet_points_mint }) @ BettingPoolsError::IncorrectTokenMint
     )]
     pub program_token_account: Account<'info, TokenAccount>,
 
