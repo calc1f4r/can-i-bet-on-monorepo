@@ -1,5 +1,6 @@
 use anchor_lang::prelude::*;
-use crate::states::{BettingPoolsState, Pool, PoolStatus, PoolClosed};
+use crate::states::{BettingPoolsState, Pool, PoolStatus};
+use crate::states::pool::PoolClosed; // Explicitly use the one from pool.rs
 use crate::errors::BettingPoolsError;
 use crate::constants::{BETTING_POOLS_SEED, POOL_SEED};
 

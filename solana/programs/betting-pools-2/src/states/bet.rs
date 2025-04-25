@@ -41,3 +41,13 @@ pub struct BetPlaced {
     pub token_type: TokenType,
     pub created_at: i64,
 }
+
+#[event]
+pub struct PayoutClaimed {
+    pub bet_id: u64,
+    pub pool_id: u64,
+    pub user: Pubkey,
+    pub amount: u64,
+    pub outcome: BetOutcome,
+    pub token_type: TokenType,
+}

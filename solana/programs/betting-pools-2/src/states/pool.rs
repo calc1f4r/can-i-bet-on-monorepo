@@ -74,6 +74,8 @@ pub struct PoolClosed {
     pub pool_id: u64,
     pub selected_option: u64,
     pub decision_time: i64,
+    pub is_draw: bool,
+    pub winning_option: u64,
 }
 
 #[event]
