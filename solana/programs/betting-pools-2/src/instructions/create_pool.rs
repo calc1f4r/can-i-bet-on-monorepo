@@ -91,7 +91,7 @@ pub fn create_pool(
         pool_id,
         question: pool.question.clone(),
         options: pool.options.clone(),
-        bets_close_at: pool.bets_close_at.clone(),
+        bets_close_at: pool.bets_close_at,
         media_url: pool.media_url.clone(),
         media_type: pool.media_type,
         category: pool.category.clone(),
@@ -99,7 +99,7 @@ pub fn create_pool(
         creator_id: pool.creator_id.clone(),
         closure_criteria: pool.closure_criteria.clone(),
         closure_instructions: pool.closure_instructions.clone(),
-        created_at: pool.created_at.clone()
+        created_at: pool.created_at
     });
 
     Ok(())

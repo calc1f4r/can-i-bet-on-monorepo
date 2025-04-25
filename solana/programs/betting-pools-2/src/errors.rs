@@ -26,4 +26,16 @@ pub enum BettingPoolsError {
     NotAuthorized,
     #[msg("Token transfer failed")]
     TokenTransferFailed,
+    #[msg("Pool is not graded yet")]
+    PoolNotGraded,
+    #[msg("Bet has already been paid out")]
+    BetAlreadyPaidOut,
+    #[msg("Caller is not the owner of the bet")]
+    NotBetOwner,
+    #[msg("Incorrect token mint for provided token account")]
+    IncorrectTokenMint,
+    #[msg("Error during grading process")]
+    GradingError,
+    #[msg("Calculated payout amount exceeds u64 max")]
+    PayoutOverflow,
 }

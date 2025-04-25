@@ -23,8 +23,9 @@ pub mod betting_pools_2 {
         ctx: Context<Initialize>,
         usdc_mint: Pubkey,
         bet_points_mint: Pubkey,
+        payout_fee_bp: u16,
     ) -> Result<()> {
-        initialize::initialize(ctx, usdc_mint, bet_points_mint)
+        initialize::initialize(ctx, usdc_mint, bet_points_mint, payout_fee_bp)
     }
 
     /// Create a new betting pool.
@@ -76,5 +77,21 @@ pub mod betting_pools_2 {
         media_type: MediaType,
     ) -> Result<()> {
         set_media::set_media(ctx, media_url, media_type)
+    }
+
+    /// Grade a betting pool.
+    /// Calls the handler in `instructions::grade_bet`.
+    pub fn grade_bet(
+        ctx: Context<GradeBet>,
+        response_option: u64,
+        decision_time_override: Option<i64>,
+    ) -> Result<()> {
+        grade_bet::grade_bet(ctx, response_option, decision_time_override)
+    }
+
+    /// Claim payout for a bet.
+    /// Calls the handler in `instructions::claim_payout`.
+    pub fn claim_payout(ctx: Context<ClaimPayout>) -> Result<()> {
+        claim_payout::claim_payout(ctx)
     }
 }

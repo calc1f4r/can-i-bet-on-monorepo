@@ -27,6 +27,7 @@ pub fn initialize(
     ctx: Context<Initialize>,
     usdc_mint: Pubkey,
     bet_points_mint: Pubkey,
+    payout_fee_bp: u16,
 ) -> Result<()> {
     let betting_pools = &mut ctx.accounts.betting_pools;
 
@@ -52,7 +53,7 @@ pub fn initialize(
     betting_pools.next_bet_id = 1;
 
     // Set payout fee basis points (0.9% like in Solidity)
-    betting_pools.payout_fee_bp = 90;
+    betting_pools.payout_fee_bp = payout_fee_bp;
 
     msg!("BettingPools program initialized");
     Ok(())
