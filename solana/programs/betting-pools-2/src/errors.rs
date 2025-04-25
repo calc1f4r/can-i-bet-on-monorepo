@@ -38,4 +38,22 @@ pub enum BettingPoolsError {
     GradingError,
     #[msg("Calculated payout amount exceeds u64 max")]
     PayoutOverflow,
+    #[msg("BettingPools is not initialized")]
+    NotInitialized,
+    #[msg("Invalid token account owner")]
+    InvalidTokenAccountOwner,
+    #[msg("Bet amount exceeds maximum limit")]
+    BetAmountTooLarge,
+    #[msg("Arithmetic overflow occurred")]
+    ArithmeticOverflow,
+    #[msg("Pool is already graded")]
+    PoolAlreadyGraded,
+    #[msg("Invalid program token account")]
+    InvalidProgramTokenAccount,
+    #[msg("Division by zero error")]
+    DivisionByZero,
+    #[msg("Pool has zero winners")]
+    ZeroWinners,
+    #[msg("Token account does not match bet token type")]
+    TokenAccountMismatch,
 }

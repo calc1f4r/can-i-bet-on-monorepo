@@ -9,13 +9,15 @@ use crate::constants::{BETTING_POOLS_SEED, POOL_SEED, BET_SEED};
 pub struct ClaimPayout<'info> {
     #[account(
         seeds = [BETTING_POOLS_SEED],
-        bump
+        bump,
+        constraint = betting_pools.is_initialized @ BettingPoolsError::NotInitialized
     )]
     pub betting_pools: Account<'info, BettingPoolsState>,
 
     #[account(
         seeds = [POOL_SEED, pool.id.to_le_bytes().as_ref()],
-        bump
+        bump,
+        constraint = pool.status == PoolStatus::Graded @ BettingPoolsError::PoolNotGraded
     )]
     pub pool: Account<'info, Pool>,
 
@@ -24,7 +26,8 @@ pub struct ClaimPayout<'info> {
         seeds = [BET_SEED, pool.id.to_le_bytes().as_ref(), bet.id.to_le_bytes().as_ref()],
         bump = bet.bump,
         constraint = bet.owner == bettor.key() @ BettingPoolsError::NotBetOwner,
-        constraint = bet.pool_id == pool.id
+        constraint = bet.pool_id == pool.id,
+        constraint = !bet.is_payed_out @ BettingPoolsError::BetAlreadyPaidOut
     )]
     pub bet: Account<'info, Bet>,
 
@@ -33,11 +36,20 @@ pub struct ClaimPayout<'info> {
 
     #[account(
         mut,
-        token::authority = bettor
+        token::authority = bettor,
+        constraint = bettor_token_account.owner == bettor.key() @ BettingPoolsError::InvalidTokenAccountOwner,
+        constraint = bettor_token_account.mint == 
+            (if bet.token_type == TokenType::Usdc { betting_pools.usdc_mint } 
+            else { betting_pools.bet_points_mint }) @ BettingPoolsError::TokenAccountMismatch
     )]
     pub bettor_token_account: Account<'info, TokenAccount>,
 
-    #[account(mut)]
+    #[account(
+        mut,
+        constraint = program_token_account.mint == 
+            (if bet.token_type == TokenType::Usdc { betting_pools.usdc_mint } 
+            else { betting_pools.bet_points_mint }) @ BettingPoolsError::TokenAccountMismatch
+    )]
     pub program_token_account: Account<'info, TokenAccount>,
 
     pub token_program: Program<'info, Token>,
@@ -54,37 +66,11 @@ pub fn claim_payout(
     let bettor_token_account = &ctx.accounts.bettor_token_account;
     let program_token_account = &ctx.accounts.program_token_account;
 
-    // Check if the pool is graded
-    if pool.status != PoolStatus::Graded {
-        return err!(BettingPoolsError::PoolNotGraded);
-    }
-
-    // Check if bet is already paid out (using the field from Bet struct)
-    if bet.is_payed_out {
-        return err!(BettingPoolsError::BetAlreadyPaidOut); // Use a more specific error
-    }
-
-    // Mark bet as paid out immediately to prevent double claims
+    // Mark bet as paid out immediately to prevent reentrancy attacks
     bet.is_payed_out = true;
     bet.outcome = BetOutcome::None; // Default, will be updated below
 
     let token_type = bet.token_type;
-
-    // Determine the correct mint and check token accounts
-    let mint_address = if token_type == TokenType::Usdc {
-        betting_pools.usdc_mint
-    } else {
-        betting_pools.bet_points_mint // Assuming bet_points_mint exists in BettingPoolsState
-    };
-
-    if bettor_token_account.mint != mint_address {
-        // Return an error indicating incorrect bettor token account mint
-        return err!(BettingPoolsError::IncorrectTokenMint);
-    }
-    if program_token_account.mint != mint_address {
-        // Return an error indicating incorrect program token account mint
-        return err!(BettingPoolsError::IncorrectTokenMint);
-    }
 
     // Get the appropriate betTotals based on token type
     let bet_totals = if token_type == TokenType::Usdc {
@@ -106,33 +92,45 @@ pub fn claim_payout(
         amount_to_transfer = bet.amount;
         final_outcome = if pool.is_draw { BetOutcome::Draw } else { BetOutcome::Voided }; // Void if unbalanced, Draw if explicitly draw
     } else {
+        // Ensure winning option is valid
+        if pool.winning_option >= 2 {
+            return err!(BettingPoolsError::InvalidOptionIndex);
+        }
+        
         let losing_option = if pool.winning_option == 0 { 1 } else { 0 };
 
         if bet.option == pool.winning_option {
-            // Calculate winnings
-            // Ensure floating point is not used. Perform multiplication first.
-            // Use u128 for intermediate calculation to prevent overflow
+            // Calculate winnings - use checked operations to prevent overflow
             let total_losing_bets = bet_totals[losing_option as usize] as u128;
             let total_winning_bets = bet_totals[pool.winning_option as usize] as u128;
+            
+            // Guard against division by zero
+            if total_winning_bets == 0 {
+                return err!(BettingPoolsError::DivisionByZero);
+            }
+            
             let bet_amount = bet.amount as u128;
 
-            let winnings = (bet_amount * total_losing_bets) / total_winning_bets;
-            let gross_payout = winnings + bet_amount; // Winnings + original stake
+            // Calculate winnings with proper overflow checking
+            let winnings = (bet_amount.checked_mul(total_losing_bets)
+                .ok_or(BettingPoolsError::ArithmeticOverflow)?) / total_winning_bets;
+                
+            let gross_payout = winnings.checked_add(bet_amount)
+                .ok_or(BettingPoolsError::ArithmeticOverflow)?; // Winnings + original stake
 
-            // Calculate fee (ensure payout_fee_bp is u16 or cast appropriately)
-            let fee = (gross_payout * betting_pools.payout_fee_bp as u128) / 10000;
-            let net_payout = gross_payout - fee;
+            // Calculate fee with overflow protection
+            let fee = (gross_payout.checked_mul(betting_pools.payout_fee_bp as u128)
+                .ok_or(BettingPoolsError::ArithmeticOverflow)?) / 10000;
+                
+            let net_payout = gross_payout.checked_sub(fee)
+                .ok_or(BettingPoolsError::ArithmeticOverflow)?;
 
             // Ensure net_payout fits in u64
             if net_payout > u64::MAX as u128 {
-                 // Handle potential overflow, maybe return an error or cap the payout
-                 // For now, let's return an error
                  return err!(BettingPoolsError::PayoutOverflow);
             }
             amount_to_transfer = net_payout as u64;
             final_outcome = BetOutcome::Won;
-
-            // Note: Fee stays in the program account (no explicit transfer needed here)
 
         } else {
             // Losing bets get nothing back
@@ -146,18 +144,23 @@ pub fn claim_payout(
 
     // If there's an amount to transfer, perform the CPI transfer
     if amount_to_transfer > 0 {
-        // Define PDA seeds for signing the transfer
-        let betting_pools_seeds = &[
+        // Verify program token account has sufficient funds
+        if program_token_account.amount < amount_to_transfer {
+            return err!(BettingPoolsError::InsufficientBalance);
+        }
+        
+        // Get PDA signer for the token program
+        let program_seeds = &[
             BETTING_POOLS_SEED,
-            &[ctx.bumps.betting_pools], // Use the bump from the betting_pools account context
+            &[ctx.bumps.betting_pools], 
         ];
-        let signer_seeds = &[&betting_pools_seeds[..]];
+        let signer_seeds = &[&program_seeds[..]];
 
         // Create the CPI context with the signer
         let cpi_accounts = Transfer {
             from: program_token_account.to_account_info(),
             to: bettor_token_account.to_account_info(),
-            authority: betting_pools.to_account_info(), // The PDA is the authority
+            authority: betting_pools.to_account_info(),
         };
         let cpi_context = CpiContext::new_with_signer(
             ctx.accounts.token_program.to_account_info(),
@@ -165,28 +168,23 @@ pub fn claim_payout(
             signer_seeds,
         );
 
-        // Perform the transfer
-        token::transfer(cpi_context, amount_to_transfer)?;
-
-        emit!(PayoutClaimed {
-            bet_id: bet.id,
-            pool_id: pool.id,
-            user: bet.owner,
-            amount: amount_to_transfer,
-            outcome: final_outcome, // Use the determined outcome
-            token_type,
-        });
-    } else {
-         // Emit event even for zero payout (e.g., for lost bets)
-         emit!(PayoutClaimed {
-            bet_id: bet.id,
-            pool_id: pool.id,
-            user: bet.owner,
-            amount: 0,
-            outcome: final_outcome,
-            token_type,
-        });
+        // Perform the transfer with detailed error handling
+        token::transfer(cpi_context, amount_to_transfer)
+            .map_err(|_| BettingPoolsError::TokenTransferFailed)?;
     }
+
+    // Always emit the event for tracking purposes
+    emit!(PayoutClaimed {
+        bet_id: bet.id,
+        pool_id: pool.id,
+        user: bet.owner,
+        amount: amount_to_transfer,
+        outcome: final_outcome,
+        token_type,
+    });
+
+    msg!("Payout claimed: Bet={}, Amount={}, Outcome={:?}", 
+        bet.id, amount_to_transfer, final_outcome);
 
     Ok(())
 }

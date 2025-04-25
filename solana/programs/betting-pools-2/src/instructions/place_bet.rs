@@ -11,14 +11,16 @@ pub struct PlaceBet<'info> {
     #[account(
         mut,
         seeds = [BETTING_POOLS_SEED],
-        bump
+        bump,
+        constraint = betting_pools.is_initialized @ BettingPoolsError::NotInitialized
     )]
     pub betting_pools: Account<'info, BettingPoolsState>,
 
     #[account(
         mut,
         seeds = [POOL_SEED, pool.id.to_le_bytes().as_ref()],
-        bump
+        bump,
+        constraint = pool.status == PoolStatus::Pending @ BettingPoolsError::PoolNotOpen
     )]
     pub pool: Account<'info, Pool>,
 
@@ -37,13 +39,15 @@ pub struct PlaceBet<'info> {
     #[account(
         mut,
         token::authority = bettor,
-        token::mint = if token_type == TokenType::Usdc { betting_pools.usdc_mint } else { betting_pools.bet_points_mint }
+        token::mint = if token_type == TokenType::Usdc { betting_pools.usdc_mint } else { betting_pools.bet_points_mint },
+        constraint = bettor_token_account.owner == bettor.key() @ BettingPoolsError::InvalidTokenAccountOwner
     )]
     pub bettor_token_account: Account<'info, TokenAccount>,
 
     #[account(
         mut,
-        token::mint = if token_type == TokenType::Usdc { betting_pools.usdc_mint } else { betting_pools.bet_points_mint }
+        token::mint = if token_type == TokenType::Usdc { betting_pools.usdc_mint } else { betting_pools.bet_points_mint },
+        constraint = program_token_account.mint == (if token_type == TokenType::Usdc { betting_pools.usdc_mint } else { betting_pools.bet_points_mint }) @ BettingPoolsError::IncorrectTokenMint
     )]
     pub program_token_account: Account<'info, TokenAccount>,
 
@@ -72,22 +76,33 @@ pub fn place_bet(
         return err!(BettingPoolsError::BettingPeriodClosed);
     }
 
-    // Check if pool is open for betting
-    if pool.status != PoolStatus::Pending {
-        return err!(BettingPoolsError::PoolNotOpen);
-    }
-
-    // Check if option index is valid
+    // Check if option index is valid - pools have 2 options (0 and 1)
     if option_index >= 2 {
         return err!(BettingPoolsError::InvalidOptionIndex);
     }
 
-    // Check if amount is valid
+    // Validate the amount
     if amount == 0 {
         return err!(BettingPoolsError::ZeroAmount);
     }
 
-    // Transfer tokens from bettor to program account
+    // Impose a maximum amount limit to prevent economic attacks
+    const MAX_BET_AMOUNT: u64 = 1_000_000_000_000; // 1 million USDC with 6 decimals or equivalent in points
+    if amount > MAX_BET_AMOUNT {
+        return err!(BettingPoolsError::BetAmountTooLarge);
+    }
+
+    // Verify enough balance in the bettor token account 
+    if ctx.accounts.bettor_token_account.amount < amount {
+        return err!(BettingPoolsError::InsufficientBalance);
+    }
+
+    // Check that the decision time hasn't been set yet (pool hasn't been graded)
+    if pool.decision_time > 0 {
+        return err!(BettingPoolsError::PoolAlreadyGraded);
+    }
+
+    // Transfer tokens from bettor to program account using a safe CPI call
     token::transfer(
         CpiContext::new(
             ctx.accounts.token_program.to_account_info(),
@@ -100,7 +115,7 @@ pub fn place_bet(
         amount,
     )?;
 
-    // Initialize the bet
+    // Initialize the bet with secure defaults
     let bet_id = betting_pools.next_bet_id;
 
     bet.id = bet_id;
@@ -109,17 +124,25 @@ pub fn place_bet(
     bet.amount = amount;
     bet.pool_id = pool.id;
     bet.created_at = clock.unix_timestamp;
-    bet.updated_at = clock.unix_timestamp; // Compatibility field
+    bet.updated_at = clock.unix_timestamp;
     bet.is_payed_out = false;
     bet.outcome = BetOutcome::None;
     bet.token_type = token_type;
     bet.bump = ctx.bumps.bet;
 
-    // Update totals in the pool
+    // Update totals in the pool with overflow checks
     if token_type == TokenType::Usdc {
-        pool.usdc_bet_totals[option_index as usize] += amount;
+        // Check for overflow before adding
+        let new_total = pool.usdc_bet_totals[option_index as usize]
+            .checked_add(amount)
+            .ok_or(BettingPoolsError::ArithmeticOverflow)?;
+        pool.usdc_bet_totals[option_index as usize] = new_total;
     } else {
-        pool.points_bet_totals[option_index as usize] += amount;
+        // Check for overflow before adding
+        let new_total = pool.points_bet_totals[option_index as usize]
+            .checked_add(amount)
+            .ok_or(BettingPoolsError::ArithmeticOverflow)?;
+        pool.points_bet_totals[option_index as usize] = new_total;
     }
 
     // Emit the BetPlaced event
@@ -136,6 +159,9 @@ pub fn place_bet(
     // Increment the bet ID counter
     let betting_pools = &mut ctx.accounts.betting_pools;
     betting_pools.next_bet_id += 1;
+
+    msg!("Bet placed successfully: ID={}, Pool={}, Option={}, Amount={}", 
+        bet_id, pool.id, option_index, amount);
 
     Ok(())
 }
