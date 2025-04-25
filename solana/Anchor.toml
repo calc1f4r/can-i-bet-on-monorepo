@@ -16,7 +16,7 @@ url = "https://api.apr.dev"
 
 [provider]
 cluster = "devnet"
-wallet = "~/.config/solana/canibeton.json"
+wallet = "~/.config/solana/id.json" # change it to id.json for windows 
 
 [scripts]
 test = "pnpm ts-mocha -p ./tsconfig.json -t 1000000 tests/**/*.ts"
